@@ -14,3 +14,4 @@ services:
       # - MDBLIST_API_KEY=your_mdblist_api_key_here
       # - TVDB_API_KEY=your_tvdb_api_key_here
       # - ENCRYPTION_KEY=custom_master_encryption_secret_here
+

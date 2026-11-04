@@ -343,6 +343,8 @@ app.get("/sitemap.xml", (_req, res) => {
 app.get("/:config/favicon.ico", (_req, res) => res.redirect("/favicon.ico"));
 app.get("/:config/favicon.svg", (_req, res) => res.redirect("/favicon.svg"));
 app.get("/:config/logo.svg", (_req, res) => res.redirect("/logo.svg"));
+app.get("/:config/logo.png", (_req, res) => res.redirect("/logo.png"));
+app.get("/:config/og-image.png", (_req, res) => res.redirect("/og-image.png"));
 
 app.use((_req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -358,7 +360,7 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.get("/", (_req, res) => res.redirect(307, "/configure"));
+app.get("/", (_req, res) => res.redirect(301, "/configure"));
 
 app.get("/configure", (_req, res) => {
   const defaultCfg = getDefaultConfig();

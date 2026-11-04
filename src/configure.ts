@@ -21,23 +21,31 @@ export function configurePage(config: AddonConfig | null): string {
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <link rel="canonical" href="https://torbox-library-sync-addon.vercel.app/configure" />
 
-<!-- Open Graph / Facebook -->
+<!-- Open Graph / Facebook / Telegram / WhatsApp / Discord -->
+<meta property="og:site_name" content="${ADDON_NAME}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://torbox-library-sync-addon.vercel.app/configure" />
 <meta property="og:title" content="${ADDON_NAME} — Stream TorBox in Stremio and Nuvio" />
 <meta property="og:description" content="Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached Torrents, Web Downloads, and Usenet media with accurate metadata matching." />
-<meta property="og:image" content="https://torbox-library-sync-addon.vercel.app/logo.svg" />
+<meta property="og:image" content="https://torbox-library-sync-addon.vercel.app/og-image.png" />
+<meta property="og:image:secure_url" content="https://torbox-library-sync-addon.vercel.app/og-image.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Torbox Library Sync Addon" />
 
-<!-- Twitter -->
-<meta name="twitter:card" content="summary" />
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${ADDON_NAME} — Stream TorBox in Stremio and Nuvio" />
 <meta name="twitter:description" content="Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached Torrents, Web Downloads, and Usenet media with accurate metadata matching." />
-<meta name="twitter:image" content="https://torbox-library-sync-addon.vercel.app/logo.svg" />
+<meta name="twitter:image" content="https://torbox-library-sync-addon.vercel.app/og-image.png" />
+<meta name="twitter:image:alt" content="Torbox Library Sync Addon" />
 
 <!-- Favicons & Manifest -->
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/png" sizes="512x512" href="/logo.png" />
 <link rel="shortcut icon" href="/favicon.svg" />
-<link rel="apple-touch-icon" href="/logo.svg" />
+<link rel="apple-touch-icon" sizes="512x512" href="/logo.png" />
 <link rel="manifest" href="/site.webmanifest" />
 
 <!-- Structured Data for SEO, AEO, and Rich Snippets -->
@@ -53,6 +61,7 @@ export function configurePage(config: AddonConfig | null): string {
       "operatingSystem": "Windows, macOS, Linux, Android, iOS, Android TV",
       "url": "https://torbox-library-sync-addon.vercel.app/configure",
       "description": "High-performance Stremio and Nuvio addon synchronizing personal TorBox cloud storage (Torrents, Web Downloads, and Usenet) with sub-millisecond deterministic metadata matching.",
+      "image": "https://torbox-library-sync-addon.vercel.app/og-image.png",
       "softwareVersion": "2.0.0",
       "license": "https://www.gnu.org/licenses/agpl-3.0.html",
       "offers": {
