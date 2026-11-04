@@ -7,8 +7,34 @@ interface TVDBToken {
 
 const tokenCache = new Map<string, TVDBToken>();
 
+export async function testTVDBKey(
+  apiKey: string,
+): Promise<{ valid: boolean; error?: string }> {
+  if (!apiKey || !apiKey.trim()) {
+    return { valid: false, error: "Missing TVDB API key" };
+  }
+  try {
+    const res = await fetch(`${TVDB_BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apikey: apiKey.trim() }),
+    });
+    if (!res.ok) {
+      return { valid: false, error: `Invalid key (HTTP ${res.status})` };
+    }
+    const data = (await res.json()) as any;
+    if (!data.data?.token) {
+      return { valid: false, error: "Authentication failed" };
+    }
+    return { valid: true };
+  } catch (err: any) {
+    return { valid: false, error: err.message || "Network error" };
+  }
+}
+
 async function getTVDBToken(apiKey: string): Promise<string | null> {
-  const cached = tokenCache.get(apiKey);
+  const cleanKey = apiKey.trim();
+  const cached = tokenCache.get(cleanKey);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.token;
   }
@@ -17,7 +43,7 @@ async function getTVDBToken(apiKey: string): Promise<string | null> {
     const res = await fetch(`${TVDB_BASE}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apikey: apiKey }),
+      body: JSON.stringify({ apikey: cleanKey }),
     });
     if (!res.ok) return null;
 
@@ -26,7 +52,7 @@ async function getTVDBToken(apiKey: string): Promise<string | null> {
     if (!token) return null;
 
     // TVDB token is valid for ~28 days, cache for 24 hours
-    tokenCache.set(apiKey, {
+    tokenCache.set(cleanKey, {
       token,
       expiresAt: Date.now() + 24 * 60 * 60 * 1000,
     });
@@ -42,7 +68,7 @@ export async function searchTVDB(
   query: string,
   year?: number,
 ): Promise<{ tvdbId?: string; name?: string; year?: number } | null> {
-  if (!apiKey) return null;
+  if (!apiKey || !apiKey.trim()) return null;
 
   try {
     const token = await getTVDBToken(apiKey);
@@ -73,4 +99,3 @@ export async function searchTVDB(
     return null;
   }
 }
-

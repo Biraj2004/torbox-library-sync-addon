@@ -15,3 +15,4 @@ User-agent: ClaudeBot
 Allow: /
 
 Sitemap: https://torbox-library-sync-addon.vercel.app/sitemap.xml
+

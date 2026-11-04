@@ -13,13 +13,36 @@ export interface MDBListHit {
 const mdblistCache = new Map<string, { hit: MDBListHit | null; at: number }>();
 const TTL_MS = 60 * 60 * 1000;
 
+export async function testMDBListKey(
+  apiKey: string,
+): Promise<{ valid: boolean; error?: string }> {
+  if (!apiKey || !apiKey.trim()) {
+    return { valid: false, error: "Missing MDBList API key" };
+  }
+  try {
+    const url = `${MDBLIST_BASE}/?apikey=${encodeURIComponent(apiKey.trim())}&s=Dune&m=movie`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      return { valid: false, error: `MDBList HTTP ${res.status}` };
+    }
+    const data = (await res.json()) as any;
+    if (data.response === "False" || data.error) {
+      return { valid: false, error: data.error || "Invalid MDBList key" };
+    }
+    return { valid: true };
+  } catch (err: any) {
+    return { valid: false, error: err.message || "Network error" };
+  }
+}
+
 export async function searchMDBList(
   apiKey: string,
   type: "movie" | "series",
   title: string,
   year?: number,
 ): Promise<MDBListHit | null> {
-  if (!apiKey) return null;
+  const cleanKey = apiKey?.trim();
+  if (!cleanKey) return null;
 
   const mType = type === "series" ? "show" : "movie";
   const cacheKey = `${mType}:${title}:${year ?? ""}`;
@@ -29,7 +52,7 @@ export async function searchMDBList(
   }
 
   try {
-    let url = `${MDBLIST_BASE}/?apikey=${encodeURIComponent(apiKey)}&s=${encodeURIComponent(title)}&m=${mType}`;
+    let url = `${MDBLIST_BASE}/?apikey=${encodeURIComponent(cleanKey)}&s=${encodeURIComponent(title)}&m=${mType}`;
     if (year) {
       url += `&y=${year}`;
     }
@@ -38,6 +61,8 @@ export async function searchMDBList(
     if (!res.ok) return null;
 
     const data = (await res.json()) as {
+      response?: string;
+      error?: string;
       search?: Array<{
         title: string;
         year?: number;
@@ -47,6 +72,10 @@ export async function searchMDBList(
         type?: string;
       }>;
     };
+
+    if (data.response === "False" || data.error) {
+      return null;
+    }
 
     const items = data.search ?? [];
     if (items.length === 0) {
@@ -76,4 +105,3 @@ export async function searchMDBList(
     return null;
   }
 }
-

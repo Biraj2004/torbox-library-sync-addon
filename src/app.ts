@@ -15,7 +15,8 @@ import {
 } from "./torbox";
 import { parseRelease, titlesMatch } from "./parser";
 import { getCinemetaMeta, CinemetaMeta } from "./cinemeta";
-import { searchMDBList } from "./mdblist";
+import { searchMDBList, testMDBListKey } from "./mdblist";
+import { testTVDBKey } from "./tvdb";
 import {
   AddonConfig,
   ADDON_NAME,
@@ -249,15 +250,27 @@ app.get("/configure", (_req, res) => {
   res.type("html").send(configurePage(defaultCfg));
 });
 
-// Endpoint to live-test a TorBox API key without saving anything
+// Endpoint to live-test API keys (TorBox, MDBList, TVDB) without saving anything
 app.post("/api/test-key", async (req, res) => {
-  const { apiKey } = req.body || {};
+  const { apiKey, service = "torbox" } = req.body || {};
   if (!apiKey || typeof apiKey !== "string") {
-    res.status(400).json({ valid: false, error: "Missing TorBox API key" });
+    res.status(400).json({ valid: false, error: "Missing API key" });
     return;
   }
-  const result = await testTorboxKey(apiKey.trim());
-  res.json(result);
+  const cleanKey = apiKey.trim();
+
+  if (service === "torbox") {
+    const result = await testTorboxKey(cleanKey);
+    res.json(result);
+  } else if (service === "mdblist") {
+    const result = await testMDBListKey(cleanKey);
+    res.json(result);
+  } else if (service === "tvdb") {
+    const result = await testTVDBKey(cleanKey);
+    res.json(result);
+  } else {
+    res.status(400).json({ valid: false, error: "Unknown service provider" });
+  }
 });
 
 // Root manifest endpoint
