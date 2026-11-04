@@ -1,0 +1,22 @@
+{
+  "name": "Torbox Library Sync Addon",
+  "short_name": "TorboxSync",
+  "description": "Stream movies and TV series directly from your personal TorBox cloud in Stremio and Nuvio.",
+  "start_url": "/configure",
+  "display": "standalone",
+  "background_color": "#0a0c10",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "32x32 48x48 96x96",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

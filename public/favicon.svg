@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="7" fill="#090d14"/>
+  <!-- Top Face -->
+  <path d="M16 5 L26 10.5 L16 16 L6 10.5 Z" fill="#38bdf8"/>
+  <!-- Left Face -->
+  <path d="M6 12 L15 17 L15 27 L6 22 Z" fill="#2563eb"/>
+  <!-- Right Face -->
+  <path d="M17 17 L26 12 L26 22 L17 27 Z" fill="#1d4ed8"/>
+  <!-- Sync Arrow Indicator -->
+  <path d="M16 14 L18 16 L17 16 L17 21 L15 21 L15 16 L14 16 Z" fill="#ffffff"/>
+</svg>
