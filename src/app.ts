@@ -1,0 +1,315 @@
+import express, { Request, Response, NextFunction } from "express";
+import path from "path";
+import { Manifest, Stream } from "stremio-addon-sdk";
+import {
+  getMyList,
+  pickMainMovieFile,
+  matchTorboxFileForEpisode,
+  buildStreamUrl,
+  formatBytes,
+  editTorrentTags,
+  hasTag,
+  mergeTags,
+  testTorboxKey,
+  TorBoxTorrent,
+} from "./torbox";
+import { parseRelease, titlesMatch } from "./parser";
+import { getCinemetaMeta, CinemetaMeta } from "./cinemeta";
+import { searchMDBList } from "./mdblist";
+import {
+  AddonConfig,
+  ADDON_NAME,
+  decodeConfig,
+  getDefaultConfig,
+} from "./config";
+import { configurePage } from "./configure";
+
+function buildManifest(configured: boolean): Manifest {
+  const manifest: Manifest = {
+    id: "org.torbox.librarysync",
+    version: "2.0.0",
+    name: ADDON_NAME,
+    description:
+      "Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached movies and TV series with accurate metadata matching.",
+    logo: "https://torbox-library-sync-addon.vercel.app/logo.svg",
+    background: "https://torbox-library-sync-addon.vercel.app/logo.svg",
+    catalogs: [],
+    resources: ["stream"],
+    types: ["movie", "series"],
+    idPrefixes: ["tt"],
+    behaviorHints: {
+      configurable: true,
+      configurationRequired: !configured,
+    },
+  };
+  return manifest;
+}
+
+// In-flight tag persistence set to prevent duplicate API calls
+const inFlightTagging = new Set<string>();
+
+async function persistImdbTag(
+  torboxApiKey: string,
+  torrent: TorBoxTorrent,
+  imdbId: string,
+): Promise<void> {
+  const key = `${torrent.id}:${imdbId}`;
+  if (hasTag(torrent, imdbId) || inFlightTagging.has(key)) return;
+
+  inFlightTagging.add(key);
+  try {
+    const updatedTags = mergeTags(torrent, imdbId);
+    await editTorrentTags(torboxApiKey, torrent.id, updatedTags);
+    torrent.tags = updatedTags;
+  } catch (err) {
+    console.error(`Failed to auto-tag torrent ${torrent.id}:`, err);
+  } finally {
+    inFlightTagging.delete(key);
+  }
+}
+
+async function resolveMetadata(
+  config: AddonConfig,
+  type: "movie" | "series",
+  imdbId: string,
+): Promise<CinemetaMeta | null> {
+  // 1. Cinemeta lookup (instant, free)
+  const meta = await getCinemetaMeta(type, imdbId);
+  if (meta) return meta;
+
+  // 2. MDBList fallback if user provided API key or env key
+  if (config.mdblistApiKey) {
+    const mdb = await searchMDBList(config.mdblistApiKey, type, imdbId);
+    if (mdb && mdb.title) {
+      return {
+        id: imdbId,
+        name: mdb.title,
+        year: mdb.year,
+        type,
+      };
+    }
+  }
+
+  return null;
+}
+
+async function handleStream(
+  config: AddonConfig,
+  type: string,
+  id: string,
+): Promise<{ streams: Stream[]; cacheMaxAge?: number }> {
+  if (type !== "movie" && type !== "series") {
+    return { streams: [] };
+  }
+
+  // Parse ID: movies are "tt1234567", series are "tt1234567:season:episode"
+  const parts = id.split(":");
+  const imdbId = parts[0];
+  const season = parts[1] ? parseInt(parts[1], 10) : undefined;
+  const episode = parts[2] ? parseInt(parts[2], 10) : undefined;
+
+  if (!imdbId.startsWith("tt")) {
+    return { streams: [] };
+  }
+
+  // Fetch user's active TorBox torrents
+  const torrents = await getMyList(config.torboxApiKey);
+  if (torrents.length === 0) {
+    return { streams: [], cacheMaxAge: 15 };
+  }
+
+  // 1. Direct tag matches (0ms ultra-fast path)
+  const directlyTagged = torrents.filter((t) => hasTag(t, imdbId));
+
+  // 2. If not all matched via tags, resolve metadata for title matching
+  let targetMeta: CinemetaMeta | null = null;
+  const matchedTorrents: TorBoxTorrent[] = [...directlyTagged];
+
+  // Look through untagged torrents
+  const untagged = torrents.filter((t) => !hasTag(t, imdbId));
+  if (untagged.length > 0) {
+    targetMeta = await resolveMetadata(config, type as "movie" | "series", imdbId);
+
+    if (targetMeta) {
+      for (const t of untagged) {
+        const parsed = parseRelease(t.name);
+        if (!parsed.cleanTitle) continue;
+
+        const isTitleMatch = titlesMatch(parsed.cleanTitle, targetMeta.name);
+        if (!isTitleMatch) continue;
+
+        if (type === "movie") {
+          // Check year proximity if both present
+          if (
+            parsed.year &&
+            targetMeta.year &&
+            Math.abs(parsed.year - targetMeta.year) > 1
+          ) {
+            continue;
+          }
+          matchedTorrents.push(t);
+          // Auto-tag in TorBox for instantaneous next lookup
+          persistImdbTag(config.torboxApiKey, t, imdbId);
+        } else if (type === "series" && season !== undefined && episode !== undefined) {
+          // For series: check if torrent is season pack or contains matching episode file
+          const hasMatchingFile = matchTorboxFileForEpisode(t, season, episode);
+          if (hasMatchingFile) {
+            matchedTorrents.push(t);
+            persistImdbTag(config.torboxApiKey, t, imdbId);
+          }
+        }
+      }
+    }
+  }
+
+  // Deduplicate matched torrents
+  const uniqueTorrents = Array.from(new Set(matchedTorrents));
+
+  // Build stream objects
+  const streams: Stream[] = [];
+
+  for (const torrent of uniqueTorrents) {
+    if (type === "movie") {
+      const file = pickMainMovieFile(torrent);
+      if (!file) continue;
+
+      const parsed = parseRelease(file.name || torrent.name);
+      const resolution = parsed.resolution || "1080p";
+      const qualityParts = [
+        parsed.source || "WEB-DL",
+        parsed.codec,
+        parsed.audio,
+      ].filter(Boolean);
+
+      const titleLines = [
+        `${targetMeta?.name || parsed.cleanTitle || torrent.name}${parsed.year ? ` (${parsed.year})` : ""}`,
+        `📦 ${formatBytes(file.size)} | 🎬 ${qualityParts.join(" ") || "Direct Stream"}`,
+      ];
+
+      streams.push({
+        name: `TorBox [${resolution}]`,
+        title: titleLines.join("\n"),
+        url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id),
+        behaviorHints: {
+          group: `torbox-${torrent.id}`,
+        },
+      });
+    } else if (type === "series" && season !== undefined && episode !== undefined) {
+      const file = matchTorboxFileForEpisode(torrent, season, episode);
+      if (!file) continue;
+
+      const parsed = parseRelease(file.name || torrent.name);
+      const resolution = parsed.resolution || "1080p";
+      const sNum = String(season).padStart(2, "0");
+      const eNum = String(episode).padStart(2, "0");
+
+      const qualityParts = [
+        parsed.source || "WEB-DL",
+        parsed.codec,
+        parsed.audio,
+      ].filter(Boolean);
+
+      const titleLines = [
+        `${targetMeta?.name || parsed.cleanTitle} S${sNum}E${eNum}`,
+        `📦 ${formatBytes(file.size)} | 🎬 ${qualityParts.join(" ") || "Direct Stream"}`,
+      ];
+
+      streams.push({
+        name: `TorBox [${resolution}]`,
+        title: titleLines.join("\n"),
+        url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id),
+        behaviorHints: {
+          group: `torbox-${torrent.id}-s${sNum}`,
+        },
+      });
+    }
+  }
+
+  return {
+    streams,
+    cacheMaxAge: 20, // 20s cache so newly added TorBox media arrives almost immediately
+  };
+}
+
+const app = express();
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "../public")));
+
+app.use((_req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  next();
+});
+
+app.get("/", (_req, res) => res.redirect("/configure"));
+
+app.get("/configure", (_req, res) => {
+  const defaultCfg = getDefaultConfig();
+  res.type("html").send(configurePage(defaultCfg));
+});
+
+// Endpoint to live-test a TorBox API key without saving anything
+app.post("/api/test-key", async (req, res) => {
+  const { apiKey } = req.body || {};
+  if (!apiKey || typeof apiKey !== "string") {
+    res.status(400).json({ valid: false, error: "Missing TorBox API key" });
+    return;
+  }
+  const result = await testTorboxKey(apiKey.trim());
+  res.json(result);
+});
+
+// Root manifest endpoint
+app.get("/manifest.json", (_req, res) => {
+  const defaultCfg = getDefaultConfig();
+  res.json(buildManifest(!!defaultCfg));
+});
+
+// Root stream endpoint for self-hosted instances using .env
+app.get("/stream/:type/:id.json", async (req, res) => {
+  const defaultCfg = getDefaultConfig();
+  if (!defaultCfg) {
+    res.json({ streams: [] });
+    return;
+  }
+  try {
+    const result = await handleStream(defaultCfg, req.params.type, req.params.id);
+    res.json(result);
+  } catch (err) {
+    console.error("Default stream handler error:", err);
+    res.json({ streams: [] });
+  }
+});
+
+// Config-scoped middleware for multi-tenant deployments
+function withConfig(req: Request, res: Response, next: NextFunction): void {
+  const config = decodeConfig(req.params.config);
+  if (!config) {
+    res.status(400).send("Invalid or missing addon configuration.");
+    return;
+  }
+  res.locals.config = config as AddonConfig;
+  next();
+}
+
+app.get("/:config/configure", (req, res) => {
+  res.type("html").send(configurePage(decodeConfig(req.params.config)));
+});
+
+app.get("/:config/manifest.json", withConfig, (_req, res) => {
+  res.json(buildManifest(true));
+});
+
+app.get("/:config/stream/:type/:id.json", withConfig, async (req, res) => {
+  const config = res.locals.config as AddonConfig;
+  try {
+    const result = await handleStream(config, req.params.type, req.params.id);
+    res.json(result);
+  } catch (err) {
+    console.error("Stream handler error:", err);
+    res.json({ streams: [] });
+  }
+});
+
+export default app;
