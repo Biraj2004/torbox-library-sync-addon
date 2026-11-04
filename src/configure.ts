@@ -15,7 +15,9 @@ export function configurePage(config: AddonConfig | null): string {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>${ADDON_NAME} — Stream TorBox in Stremio and Nuvio</title>
-<meta name="description" content="Sync your TorBox cloud library to Stremio and Nuvio. Instantly stream cached movies and TV series with accurate metadata matching and zero AI latency." />
+<meta name="description" content="Sync your personal TorBox cloud storage (Torrents, Web Downloads, and Usenet) directly to Stremio and Nuvio. Stream cached movies and TV series with sub-millisecond metadata matching." />
+<meta name="author" content="Biraj Sarkar (https://iambiraj.vercel.app)" />
+<meta name="keywords" content="TorBox, Stremio, Nuvio, Stremio addon, Torbox cloud streamer, debrid, web download, usenet, DDL stream, Biraj Sarkar, iambiraj" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <link rel="canonical" href="https://torbox-library-sync-addon.vercel.app/configure" />
 
@@ -23,13 +25,13 @@ export function configurePage(config: AddonConfig | null): string {
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://torbox-library-sync-addon.vercel.app/configure" />
 <meta property="og:title" content="${ADDON_NAME} — Stream TorBox in Stremio and Nuvio" />
-<meta property="og:description" content="Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached movies and TV series with accurate metadata matching." />
+<meta property="og:description" content="Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached Torrents, Web Downloads, and Usenet media with accurate metadata matching." />
 <meta property="og:image" content="https://torbox-library-sync-addon.vercel.app/logo.svg" />
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="${ADDON_NAME} — Stream TorBox in Stremio and Nuvio" />
-<meta name="twitter:description" content="Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached movies and TV series with accurate metadata matching." />
+<meta name="twitter:description" content="Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached Torrents, Web Downloads, and Usenet media with accurate metadata matching." />
 <meta name="twitter:image" content="https://torbox-library-sync-addon.vercel.app/logo.svg" />
 
 <!-- Favicons & Manifest -->
@@ -37,6 +39,78 @@ export function configurePage(config: AddonConfig | null): string {
 <link rel="shortcut icon" href="/favicon.svg" />
 <link rel="apple-touch-icon" href="/logo.svg" />
 <link rel="manifest" href="/site.webmanifest" />
+
+<!-- Structured Data for SEO, AEO, and Rich Snippets -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://torbox-library-sync-addon.vercel.app/#software",
+      "name": "Torbox Library Sync Addon",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Windows, macOS, Linux, Android, iOS, Android TV",
+      "url": "https://torbox-library-sync-addon.vercel.app/configure",
+      "description": "High-performance Stremio and Nuvio addon synchronizing personal TorBox cloud storage (Torrents, Web Downloads, and Usenet) with sub-millisecond deterministic metadata matching.",
+      "softwareVersion": "2.0.0",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "@id": "https://iambiraj.vercel.app/#author",
+        "name": "Biraj Sarkar",
+        "url": "https://iambiraj.vercel.app",
+        "sameAs": [
+          "https://github.com/Biraj2004",
+          "https://iambiraj.vercel.app"
+        ]
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://torbox-library-sync-addon.vercel.app/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Torbox Library Sync Addon?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Torbox Library Sync Addon is a free, high-performance Stremio and Nuvio media provider developed by Biraj Sarkar. It links directly to your personal TorBox cloud storage to stream cached Torrents, Web Downloads (DDL), and Usenet files."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it support Web Downloads and Usenet in addition to Torrents?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. The addon synchronizes Torrents (/torrents/mylist), Web Downloads (/webdl/mylist), and Usenet (/usenet/mylist) simultaneously from your TorBox account."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does metadata matching work without AI latency?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It features a deterministic scene parser that cleans raw filenames, strips release groups, audio tags, and codec noise, and matches against Cinemeta, IMDb, TVDB, and MDBList in under 1 millisecond with zero external AI delays."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my TorBox API key secure?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. The addon operates completely statelessly. Credentials are encrypted client-side in browser memory using AES-256-GCM via the Web Crypto API before generating installable manifest links. No user keys are stored in any database or disk."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
 
 <style>
   :root {
@@ -538,6 +612,35 @@ export function configurePage(config: AddonConfig | null): string {
       padding-bottom: 12px;
     }
   }
+
+  .footer-credits {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    text-align: center;
+  }
+
+  .footer-credits a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .footer-credits a:hover {
+    color: #60a5fa;
+    text-decoration: underline;
+  }
+
+  .footer-credits .sep {
+    color: var(--border-hover);
+  }
 </style>
 </head>
 <body>
@@ -657,6 +760,14 @@ export function configurePage(config: AddonConfig | null): string {
         <li>Paste your generated manifest URL and confirm.</li>
       </ol>
     </div>
+  </div>
+
+  <div class="footer-credits">
+    <span>Crafted by <a href="https://iambiraj.vercel.app" target="_blank" rel="noopener noreferrer">Biraj Sarkar</a></span>
+    <span class="sep">•</span>
+    <a href="https://github.com/Biraj2004/torbox-library-sync-addon" target="_blank" rel="noopener noreferrer">Source Code</a>
+    <span class="sep">•</span>
+    <a href="https://torbox.app" target="_blank" rel="noopener noreferrer">TorBox Cloud</a>
   </div>
 </div>
 

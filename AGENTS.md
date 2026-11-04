@@ -9,7 +9,7 @@
 - **Project Name:** Torbox Library Sync Addon
 - **Repository:** [`https://github.com/Biraj2004/torbox-library-sync-addon`](https://github.com/Biraj2004/torbox-library-sync-addon)
 - **Live Production URL:** [`https://torbox-library-sync-addon.vercel.app`](https://torbox-library-sync-addon.vercel.app)
-- **Author & Maintainer:** Biraj Sarkar (`birajsarkar67@gmail.com`)
+- **Author & Maintainer:** Biraj Sarkar ([https://iambiraj.vercel.app](https://iambiraj.vercel.app), `birajsarkar67@gmail.com`)
 - **License:** MIT
 - **Target Applications:** [Stremio](https://stremio.com) (Desktop, Android, Web, Android TV) and [Nuvio](https://nuvio.stream) (Web, Desktop, Mobile)
 
@@ -46,24 +46,30 @@ Stremio / Nuvio Client
 │  1. Config Unpacking:                                  │
 │     Extract TorBox key (from URL token or .env)        │
 │                                                        │
-│  2. Direct Cloud Tag Match (0ms Fast Path):            │
-│     Does any TorBox torrent have tag == imdbId?        │
+│  2. Concurrent Cloud Fetch:                            │
+│     Promise.allSettled([ Torrents, WebDL, Usenet ])    │
+│                                                        │
+│  3. Direct Cloud Tag Match (0ms Fast Path):            │
+│     Does any item carry tag == imdbId?                 │
 │     ├── Yes ──► Direct Stream Match                    │
 │     └── No  ──► Query Metadata Waterfall & Match       │
 │                                                        │
-│  3. 2-Tier Metadata Waterfall:                         │
+│  4. 2-Tier Metadata Waterfall:                         │
 │     ├── Tier 1: Cinemeta (Free, Built-in, 0 key)       │
 │     └── Tier 2: MDBList API (Optional key fallback)    │
 │                                                        │
-│  4. Deterministic Scene Parser (src/parser.ts):        │
+│  5. Deterministic Scene Parser (< 1ms, Zero AI):       │
 │     Extract clean title, season, episode, quality,     │
-│     source, audio, and codec in < 1ms                  │
+│     source, codec, bit-depth, HDR, audio, channels     │
 │                                                        │
-│  5. Episode & File Matcher:                            │
-│     - Movies: filter out samples/extras, pick primary  │
-│     - Series: match exact file for SxxExx in pack      │
+│  6. Dynamic Stream Labeling & Permalinks:              │
+│     Format multi-line stream description and route     │
+│     directly to respective provider permalink:         │
+│     - WebDL:   /webdl/requestdl?web_id=...             │
+│     - Torrent: /torrents/requestdl?torrent_id=...      │
+│     - Usenet:  /usenet/requestdl?usenet_id=...         │
 │                                                        │
-│  6. Background Cloud Tagging:                          │
+│  7. Background Cloud Tagging:                          │
 │     Asynchronously add "tt..." tag to TorBox           │
 │     (Subsequent requests match in < 1ms)               │
 └──────────────────────────┬─────────────────────────────┘
@@ -73,28 +79,25 @@ Stremio / Nuvio Client
 ```
 
 ### Core Architectural Pillars:
-1. **Deterministic Scene Parser (`src/parser.ts`):**
+1. **Multi-Namespace Cloud Synchronization (`src/torbox.ts`):**
+   - Automatically synchronizes **Torrents** (`/torrents/mylist`), **Web Downloads / DDL** (`/webdl/mylist`), and **Usenet** (`/usenet/mylist`) in parallel via `Promise.allSettled`.
+   - Single-file web downloads are automatically synthesized into a virtual files array for universal handling.
+2. **Deterministic Scene Parser (`src/parser.ts`):**
    - High-performance regex parser that extracts:
      - `cleanTitle`: Title stripped of scene noise, brackets, and extensions.
      - `season` & `episode`: Extracts `S01E03`, `1x03`, multi-episodes (`S01E01-E02`), and season packs (`S01`, `Season 1`).
      - `resolution`: `4K`, `1080p`, `720p`, `480p`.
      - `source` & `codec`: `WEB-DL`, `BluRay`, `HEVC`/`x265`, `x264`, `AV1`.
-     - `audio`: `Atmos`, `DDP 5.1`, `TrueHD`, `DTS`, `AAC`.
+     - `bitDepth`: `10-bit`, `12-bit`, `8-bit`.
+     - `hdrFormats`: `DV`, `HDR10+`, `HDR10`, `HDR`, `HLG`.
+     - `audioFormats`: `Dolby Atmos`, `TrueHD`, `DDP`, `AC3`, `DTS-HD MA`, `DTS`, `AAC`, `FLAC`.
+     - `channels`: `7.1`, `5.1`, `2.0`.
+     - `languages`: Bengali, Hindi, English, Tamil, Telugu, Malayalam, Kannada, Dual/Multi Audio, etc.
    - `titlesMatch()`: Normalizes punctuation, strips articles (`the`), converts Roman numerals (`Part II` -> `Part 2`), and computes token-set overlap.
    - `isSampleOrJunk()`: Filters out `sample.mkv`, trailers, featurettes, `.nfo`, and files $< 80\text{ MB}$.
-2. **Metadata Waterfall:**
-   - **Tier 1 (Cinemeta):** Stremio's free, public, built-in metadata API. Zero keys needed, zero rate limits, sub-50ms response time.
-   - **Tier 2 (MDBList):** Optional enhancement if the user provides an MDBList key. Used for alternative foreign titles and complex cross-referencing.
-   - **TVDB v4:** Optional enhancement for TV season verification.
-   - **Zero-Fail Guarantee:** If optional keys are omitted or invalid, the addon falls back to Cinemeta seamlessly.
-3. **Multi-File & Season Pack Routing:**
-   - `matchTorboxFileForEpisode()` inspects `torrent.files` for season directories (`Season 01/03.mkv`), filenames (`Severance.S01E03.mkv`), or relative paths, returning the precise file ID for that episode.
-4. **TorBox Permalinks:**
-   - Direct streaming via `${API_BASE}/torrents/requestdl?token=...&torrent_id=...&file_id=...&redirect=true`.
-   - When Stremio opens the URL, TorBox immediately issues an HTTP 302 redirect directly to its high-speed CDN.
-5. **Background Cloud Auto-Tagging:**
-   - When an untagged torrent matches an IMDb title, the addon asynchronously calls TorBox's `/torrents/edittorrent` API to append the IMDb ID (e.g. `tt11280740`) as a tag.
-   - Future lookups for that title hit the 0ms direct-tag path across all user devices.
+3. **Dynamic Stream Labeling & Permalinks:**
+   - Multi-line description template rendering full release metadata.
+   - Direct streaming via `${API_BASE}/[torrents|webdl|usenet]/requestdl?...&redirect=true` routing directly to TorBox's high-speed CDN.
 
 ---
 
