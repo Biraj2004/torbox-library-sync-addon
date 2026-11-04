@@ -41,14 +41,54 @@ export interface FormatStreamDescriptionOptions {
 }
 
 /**
+ * Resolves a clean display filename from raw paths or repeated folder structures
+ * (e.g. "Movie.mkv/Movie.mkv" -> "Movie.mkv" or "Season.Pack/Show.S01E03.mkv" -> "Show.S01E03.mkv").
+ */
+export function extractCleanFileName(rawName: string): string {
+  if (!rawName) return "";
+  const normalized = rawName.replace(/\\/g, "/").trim();
+  const segments = normalized.split("/").map((s) => s.trim()).filter(Boolean);
+  if (segments.length === 0) return normalized;
+  if (segments.length === 1) return segments[0];
+
+  const last = segments[segments.length - 1];
+  const secondLast = segments[segments.length - 2];
+
+  // Case 1: Exact or case-insensitive duplicate (e.g. "Name.mkv/Name.mkv")
+  if (last.toLowerCase() === secondLast.toLowerCase()) {
+    return last;
+  }
+
+  // Case 2: One has extension, one does not (e.g. "Movie.2024/Movie.2024.mkv" or "Movie.2024.mkv/Movie.2024")
+  const stripExt = (s: string) => s.replace(/\.[a-z0-9]{2,4}$/i, "");
+  if (stripExt(last).toLowerCase() === stripExt(secondLast).toLowerCase()) {
+    return last.includes(".") ? last : secondLast;
+  }
+
+  // Case 3: If the last segment is a recognized video file and not a trivial generic name (e.g. "feature.mp4", "1.mkv")
+  const isGeneric = /^(video|movie|film|feature|sample|cd\d|disc\d|\d+)\.[a-z0-9]{2,4}$/i.test(last);
+  if (!isGeneric && /\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i.test(last)) {
+    return last;
+  }
+
+  // Case 4: If the last segment is generic, combine with parent folder name for context
+  if (isGeneric && secondLast) {
+    return `${secondLast} (${last})`;
+  }
+
+  return last;
+}
+
+/**
  * Formats multi-line dynamic stream description according to user specification.
  */
 export function formatStreamDescription(opts: FormatStreamDescriptionOptions): string {
   const { fileName, parsed, fileSize, folderSize, source, seeders, uploader } = opts;
   const lines: string[] = [];
 
-  // Line 1: {stream.name}
-  lines.push(fileName);
+  // Line 1: {stream.name} - Clean redundant folder path prefixes
+  const cleanName = extractCleanFileName(fileName);
+  lines.push(cleanName);
 
   // Line 2: {if stream.quality}🎥 {stream.quality} {/if}{if stream.codec}🎞️ {stream.codec} {/if}{if stream.bit_depth} • {stream.bit_depth}-bit {/if}
   const line2Parts: string[] = [];
@@ -204,13 +244,16 @@ export function titlesMatch(a: string, b: string): boolean {
  * without requiring any external LLM or cloud API call.
  */
 export function parseRelease(rawName: string): ParsedRelease {
+  // Extract clean file name without directory slashes or duplicate paths
+  const cleanName = extractCleanFileName(rawName);
+
   // Strip release group brackets for title boundary cutting
   // Normalize underscores to spaces so word boundaries match reliably
-  const fullNorm = rawName
+  const fullNorm = cleanName
     .replace(/\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i, "")
     .replace(/[_\[\]]/g, " ");
 
-  let norm = rawName
+  let norm = cleanName
     .replace(/\[[^\]]*\]/g, " ")
     .replace(/\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i, "")
     .replace(/_/g, " ");

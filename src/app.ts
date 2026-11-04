@@ -14,7 +14,7 @@ import {
   testTorboxKey,
   TorBoxTorrent,
 } from "./torbox";
-import { parseRelease, titlesMatch, formatStreamDescription } from "./parser";
+import { parseRelease, titlesMatch, formatStreamDescription, extractCleanFileName } from "./parser";
 import { getCinemetaMeta, CinemetaMeta } from "./cinemeta";
 import { searchMDBList, testMDBListKey } from "./mdblist";
 import { testTVDBKey } from "./tvdb";
@@ -177,7 +177,9 @@ async function handleStream(
       const file = pickMainMovieFile(torrent);
       if (!file) continue;
 
-      const parsed = parseRelease(file.name || torrent.name);
+      const rawFileName = file.short_name || file.name || torrent.name;
+      const cleanFileName = extractCleanFileName(rawFileName);
+      const parsed = parseRelease(cleanFileName);
       const resolution = parsed.resolution || "1080p";
 
       const typeBadge =
@@ -194,7 +196,7 @@ async function handleStream(
             : "TorBox Torrent";
 
       const streamDescription = formatStreamDescription({
-        fileName: file.name || torrent.name,
+        fileName: cleanFileName,
         parsed,
         fileSize: file.size,
         folderSize: torrent.size,
@@ -213,10 +215,12 @@ async function handleStream(
       const file = matchTorboxFileForEpisode(torrent, season, episode);
       if (!file) continue;
 
-      const parsed = parseRelease(file.name || torrent.name);
-      const resolution = parsed.resolution || "1080p";
       const sNum = String(season).padStart(2, "0");
       const eNum = String(episode).padStart(2, "0");
+      const rawFileName = file.short_name || file.name || `${torrent.name} S${sNum}E${eNum}`;
+      const cleanFileName = extractCleanFileName(rawFileName);
+      const parsed = parseRelease(cleanFileName);
+      const resolution = parsed.resolution || "1080p";
 
       const typeBadge =
         torrent.mediaType === "webdl" ? "WebDL" : torrent.mediaType === "usenet" ? "Usenet" : "";
@@ -232,7 +236,7 @@ async function handleStream(
             : "TorBox Torrent";
 
       const streamDescription = formatStreamDescription({
-        fileName: file.name || `${parsed.cleanTitle} S${sNum}E${eNum}`,
+        fileName: cleanFileName,
         parsed,
         fileSize: file.size,
         folderSize: torrent.size,
