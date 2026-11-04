@@ -14,7 +14,7 @@ import {
   testTorboxKey,
   TorBoxTorrent,
 } from "./torbox";
-import { parseRelease, titlesMatch } from "./parser";
+import { parseRelease, titlesMatch, formatStreamDescription } from "./parser";
 import { getCinemetaMeta, CinemetaMeta } from "./cinemeta";
 import { searchMDBList, testMDBListKey } from "./mdblist";
 import { testTVDBKey } from "./tvdb";
@@ -179,16 +179,6 @@ async function handleStream(
 
       const parsed = parseRelease(file.name || torrent.name);
       const resolution = parsed.resolution || "1080p";
-      const qualityParts = [
-        parsed.source || "WEB-DL",
-        parsed.codec,
-        parsed.audio,
-      ].filter(Boolean);
-
-      const titleLines = [
-        `${targetMeta?.name || parsed.cleanTitle || torrent.name}${parsed.year ? ` (${parsed.year})` : ""}`,
-        `${formatBytes(file.size)} | ${qualityParts.join(" ") || "Direct Stream"}`,
-      ];
 
       const typeBadge =
         torrent.mediaType === "webdl" ? "WebDL" : torrent.mediaType === "usenet" ? "Usenet" : "";
@@ -196,9 +186,24 @@ async function handleStream(
         ? `TorBox ${typeBadge} [${resolution}]`
         : `TorBox [${resolution}]`;
 
+      const sourceLabel =
+        torrent.mediaType === "webdl"
+          ? "TorBox WebDL"
+          : torrent.mediaType === "usenet"
+            ? "TorBox Usenet"
+            : "TorBox Torrent";
+
+      const streamDescription = formatStreamDescription({
+        fileName: file.name || torrent.name,
+        parsed,
+        fileSize: file.size,
+        folderSize: torrent.size,
+        source: sourceLabel,
+      });
+
       streams.push({
         name: streamName,
-        title: titleLines.join("\n"),
+        title: streamDescription,
         url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id, torrent.mediaType),
         behaviorHints: {
           group: `torbox-${torrent.mediaType || "torrent"}-${torrent.id}`,
@@ -213,26 +218,30 @@ async function handleStream(
       const sNum = String(season).padStart(2, "0");
       const eNum = String(episode).padStart(2, "0");
 
-      const qualityParts = [
-        parsed.source || "WEB-DL",
-        parsed.codec,
-        parsed.audio,
-      ].filter(Boolean);
-
-      const titleLines = [
-        `${targetMeta?.name || parsed.cleanTitle} S${sNum}E${eNum}`,
-        `${formatBytes(file.size)} | ${qualityParts.join(" ") || "Direct Stream"}`,
-      ];
-
       const typeBadge =
         torrent.mediaType === "webdl" ? "WebDL" : torrent.mediaType === "usenet" ? "Usenet" : "";
       const streamName = typeBadge
         ? `TorBox ${typeBadge} [${resolution}]`
         : `TorBox [${resolution}]`;
 
+      const sourceLabel =
+        torrent.mediaType === "webdl"
+          ? "TorBox WebDL"
+          : torrent.mediaType === "usenet"
+            ? "TorBox Usenet"
+            : "TorBox Torrent";
+
+      const streamDescription = formatStreamDescription({
+        fileName: file.name || `${parsed.cleanTitle} S${sNum}E${eNum}`,
+        parsed,
+        fileSize: file.size,
+        folderSize: torrent.size,
+        source: sourceLabel,
+      });
+
       streams.push({
         name: streamName,
-        title: titleLines.join("\n"),
+        title: streamDescription,
         url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id, torrent.mediaType),
         behaviorHints: {
           group: `torbox-${torrent.mediaType || "torrent"}-${torrent.id}-s${sNum}`,

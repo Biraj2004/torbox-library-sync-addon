@@ -11,8 +11,103 @@ export interface ParsedRelease {
   resolution?: string;
   source?: string;
   codec?: string;
+  bitDepth?: number;
+  hdrFormats?: string[];
+  audioFormats?: string[];
+  channels?: string[];
+  languages?: string[];
   audio?: string;
   group?: string;
+}
+
+export function formatBytes(bytes: number): string {
+  if (!bytes || bytes < 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+  );
+  return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 2)} ${units[i]}`;
+}
+
+export interface FormatStreamDescriptionOptions {
+  fileName: string;
+  parsed: ParsedRelease;
+  fileSize: number;
+  folderSize?: number;
+  source: string;
+  seeders?: number;
+  uploader?: string;
+}
+
+/**
+ * Formats multi-line dynamic stream description according to user specification.
+ */
+export function formatStreamDescription(opts: FormatStreamDescriptionOptions): string {
+  const { fileName, parsed, fileSize, folderSize, source, seeders, uploader } = opts;
+  const lines: string[] = [];
+
+  // Line 1: {stream.name}
+  lines.push(fileName);
+
+  // Line 2: {if stream.quality}🎥 {stream.quality} {/if}{if stream.codec}🎞️ {stream.codec} {/if}{if stream.bit_depth} • {stream.bit_depth}-bit {/if}
+  const line2Parts: string[] = [];
+  if (parsed.source) {
+    line2Parts.push(`🎥 ${parsed.source}`);
+  }
+  if (parsed.codec) {
+    line2Parts.push(`🎞️ ${parsed.codec}`);
+  }
+  if (parsed.bitDepth) {
+    line2Parts.push(`• ${parsed.bitDepth}-bit`);
+  }
+  if (line2Parts.length > 0) {
+    lines.push(line2Parts.join(" "));
+  }
+
+  // Line 3: {if stream.hdr_formats}🎨 {stream.hdr_formats|join(' ')} {/if}{if stream.audio_formats} 🎧 {stream.audio_formats|join(' ')} {/if}{if stream.channels} 🔊 {stream.channels|join(' ')} {/if}
+  const line3Parts: string[] = [];
+  if (parsed.hdrFormats && parsed.hdrFormats.length > 0) {
+    line3Parts.push(`🎨 ${parsed.hdrFormats.join(" ")}`);
+  }
+  if (parsed.audioFormats && parsed.audioFormats.length > 0) {
+    line3Parts.push(`🎧 ${parsed.audioFormats.join(" ")}`);
+  }
+  if (parsed.channels && parsed.channels.length > 0) {
+    line3Parts.push(`🔊 ${parsed.channels.join(" ")}`);
+  }
+  if (line3Parts.length > 0) {
+    lines.push(line3Parts.join(" "));
+  }
+
+  // Line 4: {if stream.size > 0}📦 {stream.size|bytes}{if stream.folderSize > stream.size} / {stream.folderSize|bytes}{/if} {/if}{if stream.seeders > 0} {/if}
+  if (fileSize > 0) {
+    let sizeStr = `📦 ${formatBytes(fileSize)}`;
+    if (folderSize && folderSize > fileSize) {
+      sizeStr += ` / ${formatBytes(folderSize)}`;
+    }
+    if (seeders && seeders > 0) {
+      sizeStr += `  🌱 ${seeders} seeders`;
+    }
+    lines.push(sizeStr);
+  }
+
+  // Line 5: {if stream.languages}🌐 {stream.languages|join(' | ')}{/if}
+  if (parsed.languages && parsed.languages.length > 0) {
+    lines.push(`🌐 ${parsed.languages.join(" | ")}`);
+  }
+
+  // Line 6: 🔗 {stream.source}{if stream.release_group} | 🏷️ {stream.release_group}{/if}{if stream.uploader} {/if}
+  let line6 = `🔗 ${source}`;
+  if (parsed.group) {
+    line6 += ` | 🏷️ ${parsed.group}`;
+  }
+  if (uploader) {
+    line6 += ` | 👤 ${uploader}`;
+  }
+  lines.push(line6);
+
+  return lines.join("\n");
 }
 
 const VIDEO_EXT = /\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i;
@@ -109,8 +204,12 @@ export function titlesMatch(a: string, b: string): boolean {
  * without requiring any external LLM or cloud API call.
  */
 export function parseRelease(rawName: string): ParsedRelease {
-  // Strip release group brackets like [rarbg], [YTS.MX], [TorrentGalaxy]
-  // Normalize underscores to spaces so word boundaries (\b2019\b, \b1080p\b) match reliably
+  // Strip release group brackets for title boundary cutting
+  // Normalize underscores to spaces so word boundaries match reliably
+  const fullNorm = rawName
+    .replace(/\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i, "")
+    .replace(/[_\[\]]/g, " ");
+
   let norm = rawName
     .replace(/\[[^\]]*\]/g, " ")
     .replace(/\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i, "")
@@ -152,31 +251,75 @@ export function parseRelease(rawName: string): ParsedRelease {
   let source: string | undefined;
   if (/remux/i.test(norm)) source = "REMUX";
   else if (/bluray|bdrip|brrip/i.test(norm)) source = "BluRay";
-  else if (/web-?dl|webrip/i.test(norm)) source = "WEB-DL";
+  else if (/web[-_ ]?dl|webrip/i.test(norm)) source = "WEB-DL";
   else if (/hdtv/i.test(norm)) source = "HDTV";
   else if (/dvdrip/i.test(norm)) source = "DVDRip";
   else if (/cam|telesync|hdcam/i.test(norm)) source = "CAM";
 
   // Match Codec
   let codec: string | undefined;
-  if (/x265|h265|hevc/i.test(norm)) codec = "HEVC";
+  if (/x265|h265|hevc/i.test(norm)) codec = "x265";
   else if (/x264|h264|avc/i.test(norm)) codec = "x264";
   else if (/av1/i.test(norm)) codec = "AV1";
   else if (/xvid/i.test(norm)) codec = "XviD";
 
-  // Match Audio
-  let audio: string | undefined;
-  if (/atmos/i.test(norm)) audio = "Atmos";
-  else if (/truehd/i.test(norm)) audio = "TrueHD";
-  else if (/ddp5\.?1|eac3|dd\+5\.?1/i.test(norm)) audio = "DDP 5.1";
-  else if (/dts-?hd/i.test(norm)) audio = "DTS-HD";
-  else if (/dts/i.test(norm)) audio = "DTS";
-  else if (/7\.1/i.test(norm)) audio = "7.1";
-  else if (/5\.1|ac3/i.test(norm)) audio = "5.1";
-  else if (/aac/i.test(norm)) audio = "AAC";
+  // Match Bit Depth
+  let bitDepth: number | undefined;
+  if (/\b(10-?bits?|10b)\b/i.test(fullNorm)) bitDepth = 10;
+  else if (/\b(12-?bits?|12b)\b/i.test(fullNorm)) bitDepth = 12;
+  else if (/\b(8-?bits?|8b)\b/i.test(fullNorm)) bitDepth = 8;
 
-  // Release Group (e.g. -FLUX, -ION10, -SPARKS)
-  const groupMatch = norm.match(/-([a-zA-Z0-9]+)$/);
+  // Match HDR Formats
+  const hdrFormats: string[] = [];
+  if (/\b(dv|dovi|dolby\s*vision)\b/i.test(fullNorm)) hdrFormats.push("DV");
+  if (/\b(hdr10\+|hdr10plus)\b/i.test(fullNorm)) hdrFormats.push("HDR10+");
+  else if (/\bhdr10\b/i.test(fullNorm)) hdrFormats.push("HDR10");
+  else if (/\bhdr\b/i.test(fullNorm)) hdrFormats.push("HDR");
+  if (/\bhlg\b/i.test(fullNorm)) hdrFormats.push("HLG");
+
+  // Match Audio Formats
+  const audioFormats: string[] = [];
+  if (/(?:^|\b)(atmos|dolby\s*atmos)\b/i.test(fullNorm)) audioFormats.push("Dolby Atmos");
+  if (/(?:^|\b)truehd\b/i.test(fullNorm)) audioFormats.push("TrueHD");
+  if (/(?:^|\b)(ddp|eac3|dd\+)/i.test(fullNorm)) audioFormats.push("DDP");
+  else if (/(?:^|\b)(ac3|dd)(?:$|\b|\d)/i.test(fullNorm)) audioFormats.push("AC3");
+  if (/(?:^|\b)(dts-?hd\s*ma)\b/i.test(fullNorm)) audioFormats.push("DTS-HD MA");
+  else if (/(?:^|\b)dts-?hd\b/i.test(fullNorm)) audioFormats.push("DTS-HD");
+  else if (/(?:^|\b)dts\b/i.test(fullNorm)) audioFormats.push("DTS");
+  if (/(?:^|\b)aac\b/i.test(fullNorm)) audioFormats.push("AAC");
+  if (/(?:^|\b)flac\b/i.test(fullNorm)) audioFormats.push("FLAC");
+  if (/(?:^|\b)opus\b/i.test(fullNorm)) audioFormats.push("Opus");
+
+  let audio: string | undefined;
+  if (audioFormats.length > 0) audio = audioFormats.join(" ");
+
+  // Match Audio Channels
+  const channels: string[] = [];
+  const chanMatch = fullNorm.match(/(?:ddp|ac3|dts|aac|dd\+)?\s*(7[ ._]1|5[ ._]1|2[ ._]0)\b/i);
+  if (chanMatch) {
+    channels.push(chanMatch[1].replace(/[ ._]/, "."));
+  }
+
+  // Match Languages
+  const languages: string[] = [];
+  if (/\b(bengali|bangla)\b/i.test(fullNorm)) languages.push("Bengali");
+  if (/\bhindi\b/i.test(fullNorm)) languages.push("Hindi");
+  if (/\benglish\b/i.test(fullNorm)) languages.push("English");
+  if (/\btamil\b/i.test(fullNorm)) languages.push("Tamil");
+  if (/\btelugu\b/i.test(fullNorm)) languages.push("Telugu");
+  if (/\bmalayalam\b/i.test(fullNorm)) languages.push("Malayalam");
+  if (/\bkannada\b/i.test(fullNorm)) languages.push("Kannada");
+  if (/\b(dual\s*audio|dual)\b/i.test(fullNorm)) languages.push("Dual Audio");
+  if (/\b(multi\s*audio|multi)\b/i.test(fullNorm)) languages.push("Multi Audio");
+  if (/\bspanish|espanol\b/i.test(fullNorm)) languages.push("Spanish");
+  if (/\bfrench|vff|vfi\b/i.test(fullNorm)) languages.push("French");
+  if (/\bgerman\b/i.test(fullNorm)) languages.push("German");
+  if (/\bitalian\b/i.test(fullNorm)) languages.push("Italian");
+  if (/\bjapanese\b/i.test(fullNorm)) languages.push("Japanese");
+  if (/\bkorean\b/i.test(fullNorm)) languages.push("Korean");
+
+  // Release Group (e.g. -SkymoviesHD, -FLUX, -ION10, -SPARKS)
+  const groupMatch = rawName.replace(/\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i, "").match(/[-_]([a-zA-Z0-9]+)$/);
   const group = groupMatch ? groupMatch[1] : undefined;
 
   // Title: everything before the earliest delimiter (year, season, resolution, source)
@@ -211,6 +354,11 @@ export function parseRelease(rawName: string): ParsedRelease {
     resolution,
     source,
     codec,
+    bitDepth,
+    hdrFormats,
+    audioFormats,
+    channels,
+    languages,
     audio,
     group,
   };
