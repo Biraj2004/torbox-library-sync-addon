@@ -2,6 +2,8 @@ import { isSampleOrJunk, isVideoFile, matchEpisodeInFile } from "./parser";
 
 const API_BASE = "https://api.torbox.app/v1/api";
 
+export type TorBoxMediaType = "torrent" | "webdl" | "usenet";
+
 export interface TorBoxFile {
   id: number;
   name: string;
@@ -13,18 +15,19 @@ export interface TorBoxFile {
 export interface TorBoxTorrent {
   id: number;
   name: string;
-  hash: string;
+  hash?: string;
   size: number;
   tags?: string[];
   download_finished?: boolean;
   download_present?: boolean;
+  mediaType: TorBoxMediaType;
   files?: TorBoxFile[];
 }
 
 interface MyListResponse {
   success: boolean;
   detail?: string;
-  data?: TorBoxTorrent[];
+  data?: any[];
 }
 
 interface UserMeResponse {
@@ -41,7 +44,8 @@ const listCache = new Map<string, { at: number; data: TorBoxTorrent[] }>();
 const CACHE_TTL_MS = 15_000; // 15s cache for near-instant responsiveness
 
 /**
- * Retrieves the user's active TorBox torrents with an in-memory 15-second cache.
+ * Retrieves the user's active TorBox torrents, web downloads, and usenet items
+ * in parallel with an in-memory 15-second cache.
  */
 export async function getMyList(
   apiKey: string,
@@ -52,18 +56,67 @@ export async function getMyList(
     return cached.data;
   }
 
-  const res = await fetch(`${API_BASE}/torrents/mylist?bypass_cache=${forceFresh ? "true" : "false"}`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
+  const bypass = forceFresh ? "true" : "false";
+  const headers = { Authorization: `Bearer ${apiKey}` };
 
-  if (!res.ok) {
-    throw new Error(`TorBox mylist HTTP ${res.status}`);
+  const [torrentsRes, webdlRes, usenetRes] = await Promise.allSettled([
+    fetch(`${API_BASE}/torrents/mylist?bypass_cache=${bypass}`, { headers }),
+    fetch(`${API_BASE}/webdl/mylist?bypass_cache=${bypass}`, { headers }),
+    fetch(`${API_BASE}/usenet/mylist?bypass_cache=${bypass}`, { headers }),
+  ]);
+
+  const allItems: TorBoxTorrent[] = [];
+
+  // 1. Process Torrents
+  if (torrentsRes.status === "fulfilled" && torrentsRes.value.ok) {
+    try {
+      const json = (await torrentsRes.value.json()) as MyListResponse;
+      for (const t of json.data ?? []) {
+        allItems.push({
+          ...t,
+          mediaType: "torrent",
+          files: t.files && t.files.length > 0 ? t.files : [{ id: 1, name: t.name, size: t.size }],
+        });
+      }
+    } catch (e) {
+      console.error("Failed to parse torrents list:", e);
+    }
   }
 
-  const json = (await res.json()) as MyListResponse;
-  const data = json.data ?? [];
-  listCache.set(apiKey, { at: Date.now(), data });
-  return data;
+  // 2. Process Web Downloads (DDL / WebDL)
+  if (webdlRes.status === "fulfilled" && webdlRes.value.ok) {
+    try {
+      const json = (await webdlRes.value.json()) as MyListResponse;
+      for (const w of json.data ?? []) {
+        allItems.push({
+          ...w,
+          mediaType: "webdl",
+          files: w.files && w.files.length > 0 ? w.files : [{ id: 1, name: w.name, size: w.size }],
+        });
+      }
+    } catch (e) {
+      console.error("Failed to parse webdl list:", e);
+    }
+  }
+
+  // 3. Process Usenet Downloads
+  if (usenetRes.status === "fulfilled" && usenetRes.value.ok) {
+    try {
+      const json = (await usenetRes.value.json()) as MyListResponse;
+      for (const u of json.data ?? []) {
+        allItems.push({
+          ...u,
+          mediaType: "usenet",
+          files: u.files && u.files.length > 0 ? u.files : [{ id: 1, name: u.name, size: u.size }],
+        });
+      }
+    } catch (e) {
+      console.error("Failed to parse usenet list:", e);
+    }
+  }
+
+  listCache.set(apiKey, { at: Date.now(), data: allItems });
+  return allItems;
 }
 
 /**
@@ -124,24 +177,39 @@ export function mergeTags(torrent: TorBoxTorrent, ...add: string[]): string[] {
 }
 
 /**
- * Asynchronously updates tags on a TorBox torrent (used to cache resolved IMDb IDs).
+ * Asynchronously updates tags on a TorBox torrent, web download, or usenet item.
  */
 export async function editTorrentTags(
   apiKey: string,
-  torrentId: number,
+  itemId: number,
   tags: string[],
+  mediaType: TorBoxMediaType = "torrent",
 ): Promise<void> {
   try {
-    await fetch(`${API_BASE}/torrents/edittorrent`, {
+    const endpoint =
+      mediaType === "webdl"
+        ? `${API_BASE}/webdl/editwebdownload`
+        : mediaType === "usenet"
+          ? `${API_BASE}/usenet/editusenetdownload`
+          : `${API_BASE}/torrents/edittorrent`;
+
+    const bodyPayload =
+      mediaType === "webdl"
+        ? { web_id: itemId, webdownload_id: itemId, tags }
+        : mediaType === "usenet"
+          ? { usenet_id: itemId, tags }
+          : { torrent_id: itemId, tags };
+
+    await fetch(endpoint, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ torrent_id: torrentId, tags }),
+      body: JSON.stringify(bodyPayload),
     });
   } catch (err) {
-    console.error(`Failed to update tags for torrent ${torrentId}:`, err);
+    // Non-blocking: background tagging failure should never affect streaming
   }
 }
 
@@ -204,12 +272,21 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
- * Builds the official TorBox permalink stream URL with redirect=true.
+ * Builds the official TorBox permalink stream URL with redirect=true,
+ * supporting torrents, web downloads, and usenet items.
  */
 export function buildStreamUrl(
   apiKey: string,
-  torrentId: number,
+  itemId: number,
   fileId: number,
+  mediaType: TorBoxMediaType = "torrent",
 ): string {
-  return `${API_BASE}/torrents/requestdl?token=${apiKey}&torrent_id=${torrentId}&file_id=${fileId}&redirect=true`;
+  const encKey = encodeURIComponent(apiKey);
+  if (mediaType === "webdl") {
+    return `${API_BASE}/webdl/requestdl?token=${encKey}&web_id=${itemId}&webdl_id=${itemId}&file_id=${fileId}&redirect=true`;
+  }
+  if (mediaType === "usenet") {
+    return `${API_BASE}/usenet/requestdl?token=${encKey}&usenet_id=${itemId}&file_id=${fileId}&redirect=true`;
+  }
+  return `${API_BASE}/torrents/requestdl?token=${encKey}&torrent_id=${itemId}&file_id=${fileId}&redirect=true`;
 }

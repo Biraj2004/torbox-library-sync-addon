@@ -110,9 +110,11 @@ export function titlesMatch(a: string, b: string): boolean {
  */
 export function parseRelease(rawName: string): ParsedRelease {
   // Strip release group brackets like [rarbg], [YTS.MX], [TorrentGalaxy]
+  // Normalize underscores to spaces so word boundaries (\b2019\b, \b1080p\b) match reliably
   let norm = rawName
     .replace(/\[[^\]]*\]/g, " ")
-    .replace(/\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i, "");
+    .replace(/\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i, "")
+    .replace(/_/g, " ");
 
   // Match Season and Episode: e.g. S01E03, S1E3, S01E01-E03, 1x03
   const seMatch =
@@ -195,7 +197,7 @@ export function parseRelease(rawName: string): ParsedRelease {
 
   let titlePart = norm.substring(0, firstCutIndex);
   const cleanTitle = titlePart
-    .replace(/[._-]+/g, " ")
+    .replace(/[._\-()\[\]]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 

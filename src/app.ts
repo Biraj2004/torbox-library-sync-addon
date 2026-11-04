@@ -57,16 +57,16 @@ async function persistImdbTag(
   torrent: TorBoxTorrent,
   imdbId: string,
 ): Promise<void> {
-  const key = `${torrent.id}:${imdbId}`;
+  const key = `${torrent.mediaType || "torrent"}:${torrent.id}:${imdbId}`;
   if (hasTag(torrent, imdbId) || inFlightTagging.has(key)) return;
 
   inFlightTagging.add(key);
   try {
     const updatedTags = mergeTags(torrent, imdbId);
-    await editTorrentTags(torboxApiKey, torrent.id, updatedTags);
+    await editTorrentTags(torboxApiKey, torrent.id, updatedTags, torrent.mediaType);
     torrent.tags = updatedTags;
   } catch (err) {
-    console.error(`Failed to auto-tag torrent ${torrent.id}:`, err);
+    console.error(`Failed to auto-tag item ${torrent.id}:`, err);
   } finally {
     inFlightTagging.delete(key);
   }
@@ -190,12 +190,18 @@ async function handleStream(
         `${formatBytes(file.size)} | ${qualityParts.join(" ") || "Direct Stream"}`,
       ];
 
+      const typeBadge =
+        torrent.mediaType === "webdl" ? "WebDL" : torrent.mediaType === "usenet" ? "Usenet" : "";
+      const streamName = typeBadge
+        ? `TorBox ${typeBadge} [${resolution}]`
+        : `TorBox [${resolution}]`;
+
       streams.push({
-        name: `TorBox [${resolution}]`,
+        name: streamName,
         title: titleLines.join("\n"),
-        url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id),
+        url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id, torrent.mediaType),
         behaviorHints: {
-          group: `torbox-${torrent.id}`,
+          group: `torbox-${torrent.mediaType || "torrent"}-${torrent.id}`,
         },
       });
     } else if (type === "series" && season !== undefined && episode !== undefined) {
@@ -218,12 +224,18 @@ async function handleStream(
         `${formatBytes(file.size)} | ${qualityParts.join(" ") || "Direct Stream"}`,
       ];
 
+      const typeBadge =
+        torrent.mediaType === "webdl" ? "WebDL" : torrent.mediaType === "usenet" ? "Usenet" : "";
+      const streamName = typeBadge
+        ? `TorBox ${typeBadge} [${resolution}]`
+        : `TorBox [${resolution}]`;
+
       streams.push({
-        name: `TorBox [${resolution}]`,
+        name: streamName,
         title: titleLines.join("\n"),
-        url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id),
+        url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id, torrent.mediaType),
         behaviorHints: {
-          group: `torbox-${torrent.id}-s${sNum}`,
+          group: `torbox-${torrent.mediaType || "torrent"}-${torrent.id}-s${sNum}`,
         },
       });
     }
