@@ -11,7 +11,7 @@
   },
   "main": "dist/src/index.js",
   "engines": {
-    "node": ">=18.x"
+    "node": "20.x"
   },
   "scripts": {
     "build": "node node_modules/typescript/lib/tsc.js && node -e \"require('fs').cpSync('public', 'dist/public', { recursive: true })\"",

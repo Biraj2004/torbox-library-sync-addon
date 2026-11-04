@@ -237,6 +237,25 @@ async function handleStream(
 
 const app = express();
 
+// Normalize Vercel serverless rewritten paths
+app.use((req, _res, next) => {
+  const orig =
+    (req.headers["x-vercel-matched-path"] as string) ||
+    (req.headers["x-matched-path"] as string);
+
+  if (orig && orig !== "/api" && req.url.startsWith("/api")) {
+    req.url = orig;
+  } else if (req.url.startsWith("/api/")) {
+    // Keep actual API endpoints intact, strip /api from rewritten page/manifest routes
+    if (!req.url.startsWith("/api/test-key") && !req.url.startsWith("/api/encrypt-config")) {
+      req.url = req.url.slice(4);
+    }
+  } else if (req.url === "/api" || req.url === "/api/") {
+    req.url = "/";
+  }
+  next();
+});
+
 app.use(express.json());
 
 // Robust public directory resolution supporting ts-node, compiled dist, and Vercel serverless
