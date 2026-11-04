@@ -143,3 +143,4 @@ High-performance, privacy-first Stremio and Nuvio addon that synchronizes your p
 2. The addon submission enters the review queue of the Stremio Community team.
 3. Once approved, the addon will appear in the official Stremio Community Addons directory under the **Debrid** and **Stream** categories.
 4. Users who discover the addon in Stremio can click **Configure**, which opens the hosted `/configure` page where they enter their personal API credentials.
+
