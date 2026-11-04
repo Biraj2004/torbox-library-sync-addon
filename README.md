@@ -7,6 +7,7 @@
     <a href="https://torbox-library-sync-addon.vercel.app"><img src="https://img.shields.io/badge/Vercel-Live%20Deployment-000000?style=for-the-badge&logo=vercel" alt="Vercel" /></a>
     <a href="https://stremio.com"><img src="https://img.shields.io/badge/Client-Stremio-7B5BF5?style=for-the-badge&logo=stremio&logoColor=white" alt="Stremio" /></a>
     <a href="https://nuvio.stream"><img src="https://img.shields.io/badge/Client-Nuvio-2563EB?style=for-the-badge" alt="Nuvio" /></a>
+    <a href="https://github.com/Biraj2004/torbox-library-sync-addon"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github" alt="GitHub" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-success?style=for-the-badge" alt="License: MIT" /></a>
   </p>
 
@@ -14,7 +15,8 @@
     <a href="https://torbox-library-sync-addon.vercel.app"><strong>🌐 Launch Web App</strong></a> •
     <a href="#-overview">Overview</a> •
     <a href="#-key-features">Key Features</a> •
-    <a href="#-target-applications">Target Apps</a> •
+    <a href="#-dual-operation-modes">Dual Operation Modes</a> •
+    <a href="#-how-optional-keys-are-handled">Optional Keys</a> •
     <a href="#-environment-configuration">Environment Config</a> •
     <a href="#-security--stateless-privacy">Privacy</a>
   </p>
@@ -34,8 +36,38 @@ When using **Stremio** or **Nuvio**, community scraper addons frequently list it
 
 | Platform | Support | Installation Method |
 | :--- | :--- | :--- |
-| **Stremio** | Full (Desktop, Web, Android, TV) | One-click `stremio://` deep link or paste manifest URL into Search |
+| **Stremio** | Full (Desktop, Web, Android, Android TV) | One-click `stremio://` deep link or paste manifest URL into Search |
 | **Nuvio** | Full (Desktop, Web, Mobile) | Direct Web Link or Settings &rarr; Plugins/Addons &rarr; Add Custom Addon |
+
+---
+
+## 🔄 Dual Operation Modes
+
+The addon is architected to support two distinct operating models:
+
+### 1. Zero-Config Local / Self-Hosted Mode (`.env`)
+- If you self-host or run the addon locally, you can paste your API keys directly into a `.env` file.
+- The web UI automatically detects your environment keys and pre-populates them with an active `🟢 Environment Configuration Loaded` banner.
+- The root manifest (`/manifest.json`) is immediately valid and installable without requiring any base64 URL tokens.
+- **You never have to enter your key twice.**
+
+### 2. Stateless Public Mode (Vercel / Multi-Tenant)
+- When hosted publicly (e.g. on `torbox-library-sync-addon.vercel.app`), the server stores **zero user keys**.
+- Each user inputs their own TorBox API key on the configuration page.
+- The configuration is encoded client-side into their private URL token (`/:config/manifest.json`).
+- Multi-tenant key isolation guarantees that no user can access or abuse another user's TorBox quota.
+
+---
+
+## 🧩 How Optional Keys Are Handled
+
+| Key | Status | Role | Failure Fallback |
+| :--- | :--- | :--- | :--- |
+| **TorBox API Key** | **Required** | Authenticates your personal TorBox cloud library | N/A (Cannot stream without a source) |
+| **MDBList API Key** | **Optional** | Resolves foreign movie aliases, alternative release names, and international titles | **Cinemeta (Zero-Fail):** If left blank or invalid, falls back to Cinemeta automatically |
+| **TVDB API Key** | **Optional** | Validates season packs, anime arcs, and complex multi-episode numbering | **Cinemeta (Zero-Fail):** If left blank or invalid, falls back to Cinemeta automatically |
+
+> **Sanity & Edge Case Protection:** All inputs automatically strip accidental whitespace and surrounding quotes (`"..."` / `'...'`). Empty optional fields are strictly treated as `undefined` so they never pollute downstream requests. Each key can be live-tested directly in the UI before installing.
 
 ---
 
@@ -45,8 +77,8 @@ When using **Stremio** or **Nuvio**, community scraper addons frequently list it
 - **🎬 Movies & Complete Series:** Full support for single movies, individual episodes (`S01E03`, `1x03`), multi-episodes (`S01E01-E02`), and complete season packs (`Show.S01.Complete`).
 - **🧹 Smart Sample & Junk Filtering:** Detects and ignores sample clips (`sample.mkv`, files $< 80\text{ MB}$), featurettes, trailers, and text documents, ensuring only the primary media file is streamed.
 - **⚡ TorBox Cloud Auto-Tagging:** When a torrent matches an IMDb title, the addon tags it directly in TorBox in the background. Subsequent lookups across any connected device are **instantaneous ($< 1\text{ ms}$)**.
-- **🔒 Stateless Key Isolation & Privacy:** The server stores **no credentials** and has no database. User keys are encoded only into their personal manifest token. Browser inputs reset on every page reload.
-- **🌐 Public & Self-Hosted Modes:** Use the public Vercel instance with your private key or run your own private instance using `.env`.
+- **🔒 Stateless Key Isolation & Privacy:** The server stores **no credentials** and has no database. Browser inputs reset on every page reload unless configured in `.env`.
+- **🎨 Unslop Design:** Clean, modern, distraction-free UI with top-right GitHub repository integration, live key verification badges, and instant Stremio/Nuvio triggers.
 
 ---
 
@@ -86,10 +118,9 @@ Stremio / Nuvio
 
 ## ⚙️ Environment Configuration
 
-If you are self-hosting your own private instance, you can pre-configure default keys in a `.env` file so the addon works immediately without needing client-side tokens.
+If you are self-hosting your own private instance:
 
 ### 1. Create `.env`
-Copy the example file:
 ```bash
 cp .env.example .env
 ```
@@ -100,27 +131,18 @@ cp .env.example .env
 PORT=7000
 
 # TorBox API Key (Required for single-user zero-config self-hosting)
-# Find yours at https://torbox.app/settings
 TORBOX_API_KEY=your_torbox_api_key_here
 
-# MDBList API Key (Optional - for advanced title aliases & international mappings)
-# Get yours at https://mdblist.com/preferences/
+# MDBList API Key (Optional)
 MDBLIST_API_KEY=your_mdblist_api_key_here
 
-# TVDB API Key (Optional - for enhanced TV series metadata validation)
-# Get yours at https://thetvdb.com/api-information
+# TVDB API Key (Optional)
 TVDB_API_KEY=your_tvdb_api_key_here
 ```
-
-> **Security Note:** Never commit your `.env` file to Git. It is excluded by `.gitignore`.
 
 ---
 
 ## 🚀 Quick Start (Local Setup)
-
-### Prerequisites
-- Node.js (v18 or higher)
-- TorBox API token
 
 ```bash
 # 1. Clone repository
@@ -145,8 +167,6 @@ http://127.0.0.1:7000/configure
 ---
 
 ## 🌐 Deploy to Vercel
-
-You can deploy this repository to Vercel with one click:
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Biraj2004/torbox-library-sync-addon)
 
