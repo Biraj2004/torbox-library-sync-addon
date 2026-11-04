@@ -203,13 +203,19 @@ async function handleStream(
         source: sourceLabel,
       });
 
+      const isWebReady =
+        /\.(mp4|webm)$/i.test(cleanFileName) &&
+        !/\b(hevc|x265|dts|truehd|atmos)\b/i.test(cleanFileName);
+
       streams.push({
         name: streamName,
         title: streamDescription,
         url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id, torrent.mediaType),
         behaviorHints: {
+          notWebReady: !isWebReady,
+          filename: cleanFileName,
           group: `torbox-${torrent.mediaType || "torrent"}-${torrent.id}`,
-        },
+        } as any,
       });
     } else if (type === "series" && season !== undefined && episode !== undefined) {
       const file = matchTorboxFileForEpisode(torrent, season, episode);
@@ -243,13 +249,22 @@ async function handleStream(
         source: sourceLabel,
       });
 
+      const isWebReady =
+        /\.(mp4|webm)$/i.test(cleanFileName) &&
+        !/\b(hevc|x265|dts|truehd|atmos)\b/i.test(cleanFileName);
+
+      const bingieTag = `torbox-${torrent.mediaType || "torrent"}-${torrent.id}-s${sNum}`;
+
       streams.push({
         name: streamName,
         title: streamDescription,
         url: buildStreamUrl(config.torboxApiKey, torrent.id, file.id, torrent.mediaType),
         behaviorHints: {
-          group: `torbox-${torrent.mediaType || "torrent"}-${torrent.id}-s${sNum}`,
-        },
+          notWebReady: !isWebReady,
+          filename: cleanFileName,
+          bingieGroup: bingieTag,
+          group: bingieTag,
+        } as any,
       });
     }
   }

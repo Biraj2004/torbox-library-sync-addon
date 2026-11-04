@@ -409,7 +409,7 @@ export function parseRelease(rawName: string): ParsedRelease {
 
 /**
  * Matches whether a specific file within a torrent or season pack corresponds to a target
- * season and episode number (supporting SxxExx, 1x03, multi-episode ranges, and season directories).
+ * season and episode number (supporting SxxExx, 1x03, multi-episode spans like S01E01-E02, and season directories).
  */
 export function matchEpisodeInFile(
   filePath: string,
@@ -418,8 +418,12 @@ export function matchEpisodeInFile(
 ): boolean {
   const norm = filePath.replace(/\\/g, "/");
 
-  // 1. SxxExx pattern
-  const seMatches = [...norm.matchAll(/s(\d{1,2})e(\d{1,3})(?:[-_~eE]+(\d{1,3}))?/gi)];
+  // 1. SxxExx and multi-episode spans: S01E01-E02, S01E01-02, S01E01_E02, S01E01.E02, S01E01+E02
+  const seMatches = [
+    ...norm.matchAll(
+      /s(\d{1,2})[._\s-]*e(\d{1,3})(?:(?:[._\s-]*[-+~&_][._\s-]*|\.e|e)(?:s\d{1,2})?[eE]?(\d{1,3}))?/gi,
+    ),
+  ];
   for (const m of seMatches) {
     const s = parseInt(m[1], 10);
     const eStart = parseInt(m[2], 10);
@@ -429,8 +433,12 @@ export function matchEpisodeInFile(
     }
   }
 
-  // 2. 1x03 pattern
-  const xMatches = [...norm.matchAll(/(\d{1,2})x(\d{1,3})(?:[-_~xX]+(\d{1,3}))?/gi)];
+  // 2. 1x03 and multi-episode spans: 1x01-02, 1x01-1x02
+  const xMatches = [
+    ...norm.matchAll(
+      /(\d{1,2})x(\d{1,3})(?:[._\s-]*[-+~&][._\s-]*(?:(?:\d{1,2})x)?(\d{1,3}))?/gi,
+    ),
+  ];
   for (const m of xMatches) {
     const s = parseInt(m[1], 10);
     const eStart = parseInt(m[2], 10);
@@ -440,7 +448,7 @@ export function matchEpisodeInFile(
     }
   }
 
-  // 3. Season in directory path + episode in filename
+  // 3. Season in directory path + episode or episode span in filename
   const hasSeasonInPath = new RegExp(
     `(?:season|s)[._\\/ -]*0?${targetSeason}(?![0-9])`,
     "i",
@@ -448,6 +456,21 @@ export function matchEpisodeInFile(
 
   if (hasSeasonInPath) {
     const baseName = norm.split("/").pop() || norm;
+
+    // Multi-episode range in basename: e.g. Ep 01-02, 01-02.mkv, Episode 1-3
+    const rangeMatches = [
+      ...baseName.matchAll(
+        /(?:^|[._ -]|ep|episode)0?(\d{1,3})[._\s-]*[-+~&][._\s-]*(?:(?:ep|episode)[._\s-]*)?0?(\d{1,3})(?=[._ -]|\.[a-z0-9]+$)/gi,
+      ),
+    ];
+    for (const m of rangeMatches) {
+      const eStart = parseInt(m[1], 10);
+      const eEnd = parseInt(m[2], 10);
+      if (targetEpisode >= eStart && targetEpisode <= eEnd) {
+        return true;
+      }
+    }
+
     const epMatches = [
       ...baseName.matchAll(/(?:^|[._ -]|ep|episode)0?(\d{1,3})(?=[._ -]|\.[a-z0-9]+$)/gi),
     ];

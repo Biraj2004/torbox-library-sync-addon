@@ -41,11 +41,23 @@ interface UserMeResponse {
 }
 
 const listCache = new Map<string, { at: number; data: TorBoxTorrent[] }>();
-const CACHE_TTL_MS = 15_000; // 15s cache for near-instant responsiveness
+const inFlightRequests = new Map<string, Promise<TorBoxTorrent[]>>();
+const CACHE_TTL_MS = 20_000; // 20s cache for burst protection and near-instant responsiveness
+const MAX_CACHE_ENTRIES = 500;
+
+function pruneCache() {
+  if (listCache.size <= MAX_CACHE_ENTRIES) return;
+  const now = Date.now();
+  for (const [key, entry] of listCache.entries()) {
+    if (now - entry.at > CACHE_TTL_MS) {
+      listCache.delete(key);
+    }
+  }
+}
 
 /**
  * Retrieves the user's active TorBox torrents, web downloads, and usenet items
- * in parallel with an in-memory 15-second cache.
+ * in parallel with an in-memory 20-second cache and concurrent in-flight request deduplication.
  */
 export async function getMyList(
   apiKey: string,
@@ -56,67 +68,83 @@ export async function getMyList(
     return cached.data;
   }
 
-  const bypass = forceFresh ? "true" : "false";
-  const headers = { Authorization: `Bearer ${apiKey}` };
-
-  const [torrentsRes, webdlRes, usenetRes] = await Promise.allSettled([
-    fetch(`${API_BASE}/torrents/mylist?bypass_cache=${bypass}`, { headers }),
-    fetch(`${API_BASE}/webdl/mylist?bypass_cache=${bypass}`, { headers }),
-    fetch(`${API_BASE}/usenet/mylist?bypass_cache=${bypass}`, { headers }),
-  ]);
-
-  const allItems: TorBoxTorrent[] = [];
-
-  // 1. Process Torrents
-  if (torrentsRes.status === "fulfilled" && torrentsRes.value.ok) {
-    try {
-      const json = (await torrentsRes.value.json()) as MyListResponse;
-      for (const t of json.data ?? []) {
-        allItems.push({
-          ...t,
-          mediaType: "torrent",
-          files: t.files && t.files.length > 0 ? t.files : [{ id: 1, name: t.name, size: t.size }],
-        });
-      }
-    } catch (e) {
-      console.error("Failed to parse torrents list:", e);
-    }
+  // Deduplicate simultaneous in-flight network requests for the same API key
+  const pending = inFlightRequests.get(apiKey);
+  if (!forceFresh && pending) {
+    return pending;
   }
 
-  // 2. Process Web Downloads (DDL / WebDL)
-  if (webdlRes.status === "fulfilled" && webdlRes.value.ok) {
+  const fetchPromise = (async () => {
     try {
-      const json = (await webdlRes.value.json()) as MyListResponse;
-      for (const w of json.data ?? []) {
-        allItems.push({
-          ...w,
-          mediaType: "webdl",
-          files: w.files && w.files.length > 0 ? w.files : [{ id: 1, name: w.name, size: w.size }],
-        });
-      }
-    } catch (e) {
-      console.error("Failed to parse webdl list:", e);
-    }
-  }
+      const bypass = forceFresh ? "true" : "false";
+      const headers = { Authorization: `Bearer ${apiKey}` };
 
-  // 3. Process Usenet Downloads
-  if (usenetRes.status === "fulfilled" && usenetRes.value.ok) {
-    try {
-      const json = (await usenetRes.value.json()) as MyListResponse;
-      for (const u of json.data ?? []) {
-        allItems.push({
-          ...u,
-          mediaType: "usenet",
-          files: u.files && u.files.length > 0 ? u.files : [{ id: 1, name: u.name, size: u.size }],
-        });
-      }
-    } catch (e) {
-      console.error("Failed to parse usenet list:", e);
-    }
-  }
+      const [torrentsRes, webdlRes, usenetRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/torrents/mylist?bypass_cache=${bypass}`, { headers }),
+        fetch(`${API_BASE}/webdl/mylist?bypass_cache=${bypass}`, { headers }),
+        fetch(`${API_BASE}/usenet/mylist?bypass_cache=${bypass}`, { headers }),
+      ]);
 
-  listCache.set(apiKey, { at: Date.now(), data: allItems });
-  return allItems;
+      const allItems: TorBoxTorrent[] = [];
+
+      // 1. Process Torrents
+      if (torrentsRes.status === "fulfilled" && torrentsRes.value.ok) {
+        try {
+          const json = (await torrentsRes.value.json()) as MyListResponse;
+          for (const t of json.data ?? []) {
+            allItems.push({
+              ...t,
+              mediaType: "torrent",
+              files: t.files && t.files.length > 0 ? t.files : [{ id: 1, name: t.name, size: t.size }],
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse torrents list:", e);
+        }
+      }
+
+      // 2. Process Web Downloads (DDL / WebDL)
+      if (webdlRes.status === "fulfilled" && webdlRes.value.ok) {
+        try {
+          const json = (await webdlRes.value.json()) as MyListResponse;
+          for (const w of json.data ?? []) {
+            allItems.push({
+              ...w,
+              mediaType: "webdl",
+              files: w.files && w.files.length > 0 ? w.files : [{ id: 1, name: w.name, size: w.size }],
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse webdl list:", e);
+        }
+      }
+
+      // 3. Process Usenet Downloads
+      if (usenetRes.status === "fulfilled" && usenetRes.value.ok) {
+        try {
+          const json = (await usenetRes.value.json()) as MyListResponse;
+          for (const u of json.data ?? []) {
+            allItems.push({
+              ...u,
+              mediaType: "usenet",
+              files: u.files && u.files.length > 0 ? u.files : [{ id: 1, name: u.name, size: u.size }],
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse usenet list:", e);
+        }
+      }
+
+      pruneCache();
+      listCache.set(apiKey, { at: Date.now(), data: allItems });
+      return allItems;
+    } finally {
+      inFlightRequests.delete(apiKey);
+    }
+  })();
+
+  inFlightRequests.set(apiKey, fetchPromise);
+  return fetchPromise;
 }
 
 /**

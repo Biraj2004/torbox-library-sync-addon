@@ -198,6 +198,30 @@ Open `http://127.0.0.1:7000/configure` to access the setup page.
 
 ---
 
+## Docker & HomeLab Self-Hosting
+
+You can self-host the addon on your local NAS (Unraid, TrueNAS, Synology) or private server using Docker:
+
+### Using Docker Compose (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/Biraj2004/torbox-library-sync-addon.git
+cd torbox-library-sync-addon
+
+# Run container in background
+docker compose up -d
+```
+
+### Using Docker Directly
+```bash
+docker build -t torbox-library-sync .
+docker run -d --name torbox-sync -p 7000:7000 --restart unless-stopped torbox-library-sync
+```
+
+Access the configuration page at `http://<your-server-ip>:7000/configure`.
+
+---
+
 ## Security & Privacy Highlights
 
 - **Stateless Isolation:** No user tokens, passwords, or personal account identifiers are stored on disk or in persistent caches.
