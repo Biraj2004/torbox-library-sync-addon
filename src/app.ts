@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import fs from "fs";
 import path from "path";
 import { Manifest, Stream } from "stremio-addon-sdk";
 import {
@@ -237,7 +238,52 @@ async function handleStream(
 const app = express();
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../public")));
+
+// Robust public directory resolution supporting ts-node, compiled dist, and Vercel serverless
+const candidatePublicDirs = [
+  path.join(process.cwd(), "public"),
+  path.resolve(__dirname, "../../public"),
+  path.resolve(__dirname, "../public"),
+  path.join(process.cwd(), "dist/public"),
+];
+const publicDir = candidatePublicDirs.find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), "public");
+
+app.use(express.static(publicDir));
+
+// Explicit high-priority asset routes with correct MIME types
+app.get("/favicon.svg", (_req, res) => {
+  res.type("image/svg+xml").sendFile(path.join(publicDir, "favicon.svg"));
+});
+
+app.get("/favicon.ico", (_req, res) => {
+  const icoPath = path.join(publicDir, "favicon.ico");
+  if (fs.existsSync(icoPath)) {
+    res.sendFile(icoPath);
+  } else {
+    res.type("image/svg+xml").sendFile(path.join(publicDir, "favicon.svg"));
+  }
+});
+
+app.get("/logo.svg", (_req, res) => {
+  res.type("image/svg+xml").sendFile(path.join(publicDir, "logo.svg"));
+});
+
+app.get("/site.webmanifest", (_req, res) => {
+  res.type("application/manifest+json").sendFile(path.join(publicDir, "site.webmanifest"));
+});
+
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain").sendFile(path.join(publicDir, "robots.txt"));
+});
+
+app.get("/sitemap.xml", (_req, res) => {
+  res.type("application/xml").sendFile(path.join(publicDir, "sitemap.xml"));
+});
+
+// Forward subpath icon requests
+app.get("/:config/favicon.ico", (_req, res) => res.redirect("/favicon.ico"));
+app.get("/:config/favicon.svg", (_req, res) => res.redirect("/favicon.svg"));
+app.get("/:config/logo.svg", (_req, res) => res.redirect("/logo.svg"));
 
 app.use((_req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");

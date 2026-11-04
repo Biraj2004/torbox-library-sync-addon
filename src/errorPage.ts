@@ -41,6 +41,8 @@ export function renderErrorPage(options: ErrorPageOptions): string {
 <title>${statusCode} - ${escapeHtml(title)} | ${ADDON_NAME}</title>
 <meta name="robots" content="noindex, nofollow" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.svg" />
+<link rel="apple-touch-icon" href="/logo.svg" />
 <style>
   :root {
     --bg-base: #090b0e;
@@ -381,3 +383,4 @@ export function renderErrorPage(options: ErrorPageOptions): string {
 </body>
 </html>`;
 }
+

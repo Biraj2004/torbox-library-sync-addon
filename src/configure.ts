@@ -34,6 +34,7 @@ export function configurePage(config: AddonConfig | null): string {
 
 <!-- Favicons & Manifest -->
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.svg" />
 <link rel="apple-touch-icon" href="/logo.svg" />
 <link rel="manifest" href="/site.webmanifest" />
 

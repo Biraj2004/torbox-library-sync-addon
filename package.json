@@ -14,7 +14,7 @@
     "node": ">=18.x"
   },
   "scripts": {
-    "build": "node node_modules/typescript/lib/tsc.js",
+    "build": "node node_modules/typescript/lib/tsc.js && node -e \"require('fs').cpSync('public', 'dist/public', { recursive: true })\"",
     "start": "node --env-file-if-exists=.env dist/src/index.js",
     "dev": "node --env-file-if-exists=.env -r ts-node/register src/index.ts"
   },
