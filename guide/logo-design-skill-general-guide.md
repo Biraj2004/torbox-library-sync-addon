@@ -92,7 +92,7 @@ Every software vertical has saturated, predictable visual clichés. Identify the
 | **Cloud & Infrastructure** | Generic fluffy cumulus clouds, server rack stacks, interconnected globe wireframes. | Gateway conduits, low-latency bridges, distributed coordinate anchors, immutable blocks. |
 | **Data & Analytics** | Bar charts with upward arrows, pie wedges, magnifying glasses over spreadsheets. | Metric tension vectors, signal-to-noise filters, dimensional projection facets. |
 | **Security & Privacy** | Heavy padlocks, medieval shields, vaults, keys, biohazard hazard polygons. | Cryptographic hashes, boundary envelopes, parity checkpoints, optical prism refraction. |
-| **AI & Machine Learning** | Sparkle stars (✨), neural node webs, human silhouette brains, glowing circuitry. | Latent space manifolds, convergence vertices, high-dimensional projections, token ribbons. |
+| **AI & Machine Learning** | Sparkle stars, neural node webs, human silhouette brains, glowing circuitry. | Latent space manifolds, convergence vertices, high-dimensional projections, token ribbons. |
 | **Fintech & Commerce** | Flying paper airplanes, upward diagonal arrows, gold coins, generic credit card shapes. | Ledger equilibrium, velocity vectors, split-second reconciliation nodes. |
 
 ### 3.3 The Flaw Audit for Existing Logos (Redesign Mode)
@@ -406,7 +406,7 @@ Ensure the webmanifest declares both `any` and `maskable` icon targets:
 
 A common frontend mistake is placing an SVG tile (which already features an integrated background and border) inside a parent container with its own background, border, and padding.
 
-#### ❌ The Double-Border Anti-Pattern:
+#### Anti-Pattern: The Double-Border
 ```tsx
 // Anti-pattern: Clumsy nested borders and redundant background styling
 <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 p-1.5 flex items-center justify-center">
@@ -414,7 +414,7 @@ A common frontend mistake is placing an SVG tile (which already features an inte
 </div>
 ```
 
-#### ✅ Modern Clean Squircle Container:
+#### Recommended: Modern Clean Squircle Container:
 ```tsx
 // Clean pattern: Let the squircle fill the container cleanly with a subtle single ring accent
 <div className="w-9 h-9 rounded-xl overflow-hidden ring-1 ring-slate-800/80 hover:ring-indigo-500/60 transition-all shadow-sm shrink-0">

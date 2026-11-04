@@ -103,7 +103,7 @@ Stremio / Nuvio Client
 ### Dual Operating Modes
 1. **Local / Single-User Zero-Config Mode (`.env`):**
    - When `TORBOX_API_KEY` is defined in `.env`, the server operates in single-user mode.
-   - The web UI detects environment keys, displays a `🟢 Environment Configuration Loaded` banner, and pre-populates fields.
+   - The web UI detects environment keys, displays an "Environment Configuration Loaded" banner, and pre-populates fields.
    - The root `/manifest.json` becomes an immediately installable manifest with `configurationRequired: false`.
    - The user never enters their key twice.
 2. **Public / Multi-Tenant Stateless Token Mode (`/:config/manifest.json`):**

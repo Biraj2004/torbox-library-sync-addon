@@ -12,19 +12,19 @@
   </p>
 
   <p>
-    <a href="https://torbox-library-sync-addon.vercel.app"><strong>🌐 Launch Web App</strong></a> •
-    <a href="#-overview">Overview</a> •
-    <a href="#-key-features">Key Features</a> •
-    <a href="#-dual-operation-modes">Dual Operation Modes</a> •
-    <a href="#-how-optional-keys-are-handled">Optional Keys</a> •
-    <a href="#-environment-configuration">Environment Config</a> •
-    <a href="#-security--stateless-privacy">Privacy</a>
+    <a href="https://torbox-library-sync-addon.vercel.app"><strong>Launch Web App</strong></a> •
+    <a href="#overview">Overview</a> •
+    <a href="#key-features">Key Features</a> •
+    <a href="#dual-operation-modes">Dual Operation Modes</a> •
+    <a href="#how-optional-keys-are-handled">Optional Keys</a> •
+    <a href="#environment-configuration">Environment Config</a> •
+    <a href="#security--dynamic-cryptography">Security</a>
   </p>
 </div>
 
 ---
 
-## ⚡ Overview
+## Overview
 
 When using **Stremio** or **Nuvio**, community scraper addons frequently list items as **not cached**. When you grab the torrent or magnet link and add it to your [TorBox](https://torbox.app) account, it is cached immediately. However, refreshing Stremio often still does not display your newly cached media because external indexers have not updated or filenames are cluttered with release tags.
 
@@ -32,7 +32,7 @@ When using **Stremio** or **Nuvio**, community scraper addons frequently list it
 
 ---
 
-## 🎯 Target Applications
+## Target Applications
 
 | Platform | Support | Installation Method |
 | :--- | :--- | :--- |
@@ -41,13 +41,13 @@ When using **Stremio** or **Nuvio**, community scraper addons frequently list it
 
 ---
 
-## 🔄 Dual Operation Modes
+## Dual Operation Modes
 
 The addon is architected to support two distinct operating models:
 
 ### 1. Zero-Config Local / Self-Hosted Mode (`.env`)
 - If you self-host or run the addon locally, you can paste your API keys directly into a `.env` file.
-- The web UI automatically detects your environment keys and pre-populates them with an active `🟢 Environment Configuration Loaded` banner.
+- The web UI automatically detects your environment keys and pre-populates them with an active "Environment Configuration Loaded" banner.
 - The root manifest (`/manifest.json`) is immediately valid and installable without requiring any base64 URL tokens.
 - **You never have to enter your key twice.**
 
@@ -59,7 +59,7 @@ The addon is architected to support two distinct operating models:
 
 ---
 
-## 🧩 How Optional Keys Are Handled
+## How Optional Keys Are Handled
 
 | Key | Status | Role | Failure Fallback |
 | :--- | :--- | :--- | :--- |
@@ -71,18 +71,18 @@ The addon is architected to support two distinct operating models:
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- **🚀 Sub-Millisecond Deterministic Parser (Zero AI):** Completely free and self-sustained. Strips release groups, codecs, and container noise in `< 1 ms` without paid OpenAI or cloud LLM costs.
-- **🎬 Movies & Complete Series:** Full support for single movies, individual episodes (`S01E03`, `1x03`), multi-episodes (`S01E01-E02`), and complete season packs (`Show.S01.Complete`).
-- **🧹 Smart Sample & Junk Filtering:** Detects and ignores sample clips (`sample.mkv`, files $< 80\text{ MB}$), featurettes, trailers, and text documents, ensuring only the primary media file is streamed.
-- **⚡ TorBox Cloud Auto-Tagging:** When a torrent matches an IMDb title, the addon tags it directly in TorBox in the background. Subsequent lookups across any connected device are **instantaneous ($< 1\text{ ms}$)**.
-- **🔒 Stateless Key Isolation & Privacy:** The server stores **no credentials** and has no database. Browser inputs reset on every page reload unless configured in `.env`.
-- **🎨 Unslop Design:** Clean, modern, distraction-free UI with top-right GitHub repository integration, live key verification badges, and instant Stremio/Nuvio triggers.
+- **Sub-Millisecond Deterministic Parser (Zero AI):** Completely free and self-sustained. Strips release groups, codecs, and container noise in `< 1 ms` without paid OpenAI or cloud LLM costs.
+- **Movies and Complete Series:** Full support for single movies, individual episodes (`S01E03`, `1x03`), multi-episodes (`S01E01-E02`), and complete season packs (`Show.S01.Complete`).
+- **Smart Sample and Junk Filtering:** Detects and ignores sample clips (`sample.mkv`, files $< 80\text{ MB}$), featurettes, trailers, and text documents, ensuring only the primary media file is streamed.
+- **TorBox Cloud Auto-Tagging:** When a torrent matches an IMDb title, the addon tags it directly in TorBox in the background. Subsequent lookups across any connected device are **instantaneous ($< 1\text{ ms}$)**.
+- **Stateless Key Isolation and Privacy:** The server stores **no credentials** and has no database. Browser inputs reset on every page reload unless configured in `.env`.
+- **Unslop Design:** Clean, modern, distraction-free UI with top-right GitHub repository integration, live key verification badges, and instant Stremio/Nuvio triggers.
 
 ---
 
-## 🛠️ Architecture Workflow
+## Architecture Workflow
 
 ```
 Stremio / Nuvio
@@ -116,7 +116,7 @@ Stremio / Nuvio
 
 ---
 
-## ⚙️ Environment Configuration
+## Environment Configuration
 
 If you are self-hosting your own private instance:
 
@@ -142,7 +142,7 @@ TVDB_API_KEY=your_tvdb_api_key_here
 
 ---
 
-## 🚀 Quick Start (Local Setup)
+## Quick Start (Local Setup)
 
 ```bash
 # 1. Clone repository
@@ -166,7 +166,7 @@ http://127.0.0.1:7000/configure
 
 ---
 
-## 🌐 Deploy to Vercel
+## Deploy to Vercel
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Biraj2004/torbox-library-sync-addon)
 
@@ -174,7 +174,7 @@ http://127.0.0.1:7000/configure
 
 ---
 
-## 🔒 Security & Dynamic Cryptography
+## Security & Dynamic Cryptography
 
 - **AES-256-GCM Token Encryption:** User credentials are never exposed in plaintext in the manifest URL. They are masked and encrypted into an authenticated AES-256-GCM token with random IVs and verification tags.
 - **Zero-Storage:** No credentials or user tokens are ever saved to disk, database, or server logs.
@@ -184,7 +184,7 @@ http://127.0.0.1:7000/configure
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
 
