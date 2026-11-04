@@ -40,6 +40,9 @@ interface UserMeResponse {
 const listCache = new Map<string, { at: number; data: TorBoxTorrent[] }>();
 const CACHE_TTL_MS = 15_000; // 15s cache for near-instant responsiveness
 
+/**
+ * Retrieves the user's active TorBox torrents with an in-memory 15-second cache.
+ */
 export async function getMyList(
   apiKey: string,
   forceFresh = false,
@@ -63,6 +66,9 @@ export async function getMyList(
   return data;
 }
 
+/**
+ * Tests whether a given TorBox API key is valid by querying /v1/api/user/me.
+ */
 export async function testTorboxKey(
   apiKey: string,
 ): Promise<{ valid: boolean; email?: string; plan?: string; error?: string }> {
@@ -118,6 +124,9 @@ export function mergeTags(torrent: TorBoxTorrent, ...add: string[]): string[] {
   );
 }
 
+/**
+ * Asynchronously updates tags on a TorBox torrent (used to cache resolved IMDb IDs).
+ */
 export async function editTorrentTags(
   apiKey: string,
   torrentId: number,
@@ -137,6 +146,9 @@ export async function editTorrentTags(
   }
 }
 
+/**
+ * Selects the primary movie file from a torrent, automatically ignoring samples and extras.
+ */
 export function pickMainMovieFile(torrent: TorBoxTorrent): TorBoxFile | undefined {
   const files = torrent.files ?? [];
   if (files.length === 0) return undefined;
@@ -153,6 +165,9 @@ export function pickMainMovieFile(torrent: TorBoxTorrent): TorBoxFile | undefine
   return pool.reduce((a, b) => (b.size > a.size ? b : a));
 }
 
+/**
+ * Finds the specific video file inside a torrent that matches a target season and episode.
+ */
 export function matchTorboxFileForEpisode(
   torrent: TorBoxTorrent,
   season: number,
@@ -189,6 +204,9 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 2)} ${units[i]}`;
 }
 
+/**
+ * Builds the official TorBox permalink stream URL with redirect=true.
+ */
 export function buildStreamUrl(
   apiKey: string,
   torrentId: number,

@@ -1,3 +1,6 @@
+/**
+ * Interface representing structured metadata extracted from a raw release filename.
+ */
 export interface ParsedRelease {
   cleanTitle: string;
   year?: number;
@@ -14,10 +17,16 @@ export interface ParsedRelease {
 
 const VIDEO_EXT = /\.(mkv|mp4|avi|mov|webm|m4v|ts|flv|wmv)$/i;
 
+/**
+ * Checks whether a filename represents a standard video container.
+ */
 export function isVideoFile(filename: string): boolean {
   return VIDEO_EXT.test(filename);
 }
 
+/**
+ * Detects whether a file is a sample clip, trailer, featurette, subtitle, or junk file.
+ */
 export function isSampleOrJunk(filename: string, sizeBytes?: number): boolean {
   const lower = filename.toLowerCase();
   if (
@@ -40,6 +49,10 @@ export function isSampleOrJunk(filename: string, sizeBytes?: number): boolean {
   return false;
 }
 
+/**
+ * Normalizes a movie or TV show title for fuzzy comparison by removing punctuation,
+ * converting Roman numerals to Arabic, and stripping non-alphanumeric noise.
+ */
 export function normalizeTitle(title: string): string {
   if (!title) return "";
   return title
@@ -59,6 +72,9 @@ export function normalizeTitle(title: string): string {
     .trim();
 }
 
+/**
+ * Compares two titles for semantic equivalence using normalization and token set overlap.
+ */
 export function titlesMatch(a: string, b: string): boolean {
   const normA = normalizeTitle(a);
   const normB = normalizeTitle(b);
@@ -88,6 +104,10 @@ export function titlesMatch(a: string, b: string): boolean {
   return (ratioA >= 0.8 && ratioB >= 0.8) || (wordsA.size >= 2 && wordsB.size >= 2 && overlap >= Math.min(wordsA.size, wordsB.size));
 }
 
+/**
+ * Deterministically parses a raw torrent or file name into structured release metadata
+ * without requiring any external LLM or cloud API call.
+ */
 export function parseRelease(rawName: string): ParsedRelease {
   // Strip release group brackets like [rarbg], [YTS.MX], [TorrentGalaxy]
   let norm = rawName
@@ -194,6 +214,10 @@ export function parseRelease(rawName: string): ParsedRelease {
   };
 }
 
+/**
+ * Matches whether a specific file within a torrent or season pack corresponds to a target
+ * season and episode number (supporting SxxExx, 1x03, multi-episode ranges, and season directories).
+ */
 export function matchEpisodeInFile(
   filePath: string,
   targetSeason: number,

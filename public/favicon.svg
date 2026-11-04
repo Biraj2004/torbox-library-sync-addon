@@ -1,12 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="7" fill="#090d14"/>
-  <!-- Top Face -->
-  <path d="M16 5 L26 10.5 L16 16 L6 10.5 Z" fill="#38bdf8"/>
-  <!-- Left Face -->
-  <path d="M6 12 L15 17 L15 27 L6 22 Z" fill="#2563eb"/>
-  <!-- Right Face -->
-  <path d="M17 17 L26 12 L26 22 L17 27 Z" fill="#1d4ed8"/>
-  <!-- Sync Arrow Indicator -->
-  <path d="M16 14 L18 16 L17 16 L17 21 L15 21 L15 16 L14 16 Z" fill="#ffffff"/>
+  <defs>
+    <filter id="tabGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  
+  <g filter="url(#tabGlow)">
+    <!-- Top Face (Cap) - Vibrant Cyan/Blue -->
+    <path d="M16 1.5 L30.5 9 L16 16.5 L1.5 9 Z" fill="#38bdf8"/>
+    
+    <!-- Left Body Facet - Primary Cobalt -->
+    <path d="M1.5 10.5 L15 17.5 L15 30.5 L1.5 23.5 Z" fill="#2563eb"/>
+    
+    <!-- Right Body Facet - Deep Navy Blue -->
+    <path d="M17 17.5 L30.5 10.5 L30.5 23.5 L17 30.5 Z" fill="#1d4ed8"/>
+    
+    <!-- Bold High-Contrast Central Sync Pulse -->
+    <!-- Top Directional Vector -->
+    <path d="M16 6 L23 9.5 L19.5 11.2 L16 9.5 Z" fill="#ffffff"/>
+    
+    <!-- Vertical Flow Sync Arrow -->
+    <path d="M16 13.5 L20.5 18 L17.5 18 L17.5 26 L14.5 26 L14.5 18 L11.5 18 Z" fill="#ffffff"/>
+  </g>
 </svg>
-
