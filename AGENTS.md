@@ -10,7 +10,7 @@
 - **Repository:** [`https://github.com/Biraj2004/torbox-library-sync-addon`](https://github.com/Biraj2004/torbox-library-sync-addon)
 - **Live Production URL:** [`https://torbox-library-sync-addon.vercel.app`](https://torbox-library-sync-addon.vercel.app)
 - **Author & Maintainer:** Biraj Sarkar ([https://iambiraj.vercel.app](https://iambiraj.vercel.app), `birajsarkar67@gmail.com`)
-- **License:** MIT
+- **License:** GNU Affero General Public License v3.0 (GNU AGPLv3) (Mandatory attribution to Biraj Sarkar, strict copyleft, no closed-source derivatives permitted)
 - **Target Applications:** [Stremio](https://stremio.com) (Desktop, Android, Web, Android TV) and [Nuvio](https://nuvio.stream) (Web, Desktop, Mobile)
 
 ---

@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached movies and TV series with accurate metadata matching.",
   "author": "Biraj Sarkar <birajsarkar67@gmail.com> (https://iambiraj.vercel.app)",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "homepage": "https://torbox-library-sync-addon.vercel.app",
   "repository": {
     "type": "git",

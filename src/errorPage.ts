@@ -377,7 +377,7 @@ export function renderErrorPage(options: ErrorPageOptions): string {
   </div>
 
   <div class="footer-text">
-    Crafted by <a href="https://iambiraj.vercel.app" target="_blank" rel="noopener noreferrer">Biraj Sarkar</a> • <a href="https://github.com/Biraj2004/torbox-library-sync-addon" target="_blank" rel="noopener noreferrer">Torbox Library Sync Addon</a> • Open Source (MIT)
+    Crafted by <a href="https://iambiraj.vercel.app" target="_blank" rel="noopener noreferrer">Biraj Sarkar</a> • <a href="https://github.com/Biraj2004/torbox-library-sync-addon" target="_blank" rel="noopener noreferrer">Torbox Library Sync Addon</a> • Open Source (AGPLv3)
   </div>
 </div>
 </body>

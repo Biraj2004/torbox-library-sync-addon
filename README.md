@@ -9,7 +9,7 @@
     <a href="https://stremio.com"><img src="https://img.shields.io/badge/Client-Stremio-7B5BF5?style=for-the-badge&logo=stremio&logoColor=white" alt="Stremio" /></a>
     <a href="https://nuvio.stream"><img src="https://img.shields.io/badge/Client-Nuvio-2563EB?style=for-the-badge" alt="Nuvio" /></a>
     <a href="https://github.com/Biraj2004/torbox-library-sync-addon"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github" alt="GitHub" /></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-success?style=for-the-badge" alt="License: MIT" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-red?style=for-the-badge" alt="License: GNU AGPLv3" /></a>
   </p>
 
   <p>
@@ -202,8 +202,18 @@ Open `http://127.0.0.1:7000/configure` to access the setup page.
 
 - **Stateless Isolation:** No user tokens, passwords, or personal account identifiers are stored on disk or in persistent caches.
 - **Web Crypto AES-256-GCM:** Manifest URLs use authenticated encryption with unique 12-byte initialization vectors (IVs).
-- **Direct CDN Streaming:** Streams utilize TorBox's official `redirect=true` permalinks (`/torrents/requestdl`, `/webdl/requestdl`, `/usenet/requestdl`), routing traffic directly between TorBox and your media player.
-- See [SECURITY.md](SECURITY.md) for vulnerability reporting guidelines.
+- Direct CDN Streaming: Streams utilize TorBox's official `redirect=true` permalinks (`/torrents/requestdl`, `/webdl/requestdl`, `/usenet/requestdl`), routing traffic directly between TorBox and your media player.
+- See [SECURITY.md](SECURITY.md) for vulnerability disclosure and open-source license enforcement policies.
+
+---
+
+## License & Copyleft Terms
+
+This project is licensed under the **GNU Affero General Public License v3.0 (GNU AGPLv3)**.
+
+- **Mandatory Attribution:** Any distribution, fork, or derivative work must credit **Biraj Sarkar** ([https://iambiraj.vercel.app](https://iambiraj.vercel.app)) and link back to the [original repository](https://github.com/Biraj2004/torbox-library-sync-addon).
+- **Mandatory Open-Source (No Closed Source):** Any modifications, derivative works, or network-hosted deployments (including cloud instances on Vercel, Docker, or self-hosted servers) must be 100% open-sourced under the AGPLv3 with full source code made available to network users. Closed-source, proprietary derivatives, or commercial rebranding without source disclosure is strictly prohibited.
+- For complete legal terms, review the full [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -213,4 +223,4 @@ Open `http://127.0.0.1:7000/configure` to access the setup page.
 - **Portfolio:** [https://iambiraj.vercel.app](https://iambiraj.vercel.app)
 - **GitHub:** [@Biraj2004](https://github.com/Biraj2004)
 - **Project Repository:** [Biraj2004/torbox-library-sync-addon](https://github.com/Biraj2004/torbox-library-sync-addon)
-- **License:** [MIT License](LICENSE)
+- **License:** [GNU Affero General Public License v3.0 (GNU AGPLv3)](LICENSE)

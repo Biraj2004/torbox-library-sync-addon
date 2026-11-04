@@ -54,6 +54,7 @@ export function configurePage(config: AddonConfig | null): string {
       "url": "https://torbox-library-sync-addon.vercel.app/configure",
       "description": "High-performance Stremio and Nuvio addon synchronizing personal TorBox cloud storage (Torrents, Web Downloads, and Usenet) with sub-millisecond deterministic metadata matching.",
       "softwareVersion": "2.0.0",
+      "license": "https://www.gnu.org/licenses/agpl-3.0.html",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -766,6 +767,8 @@ export function configurePage(config: AddonConfig | null): string {
     <span>Crafted by <a href="https://iambiraj.vercel.app" target="_blank" rel="noopener noreferrer">Biraj Sarkar</a></span>
     <span class="sep">•</span>
     <a href="https://github.com/Biraj2004/torbox-library-sync-addon" target="_blank" rel="noopener noreferrer">Source Code</a>
+    <span class="sep">•</span>
+    <a href="https://github.com/Biraj2004/torbox-library-sync-addon/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPLv3</a>
     <span class="sep">•</span>
     <a href="https://torbox.app" target="_blank" rel="noopener noreferrer">TorBox Cloud</a>
   </div>
