@@ -25,6 +25,7 @@ import {
   getDefaultConfig,
 } from "./config";
 import { configurePage } from "./configure";
+import { renderErrorPage } from "./errorPage";
 
 function buildManifest(configured: boolean): Manifest {
   const manifest: Manifest = {
@@ -315,7 +316,22 @@ app.get("/stream/:type/:id.json", async (req, res) => {
 function withConfig(req: Request, res: Response, next: NextFunction): void {
   const config = decodeConfig(req.params.config);
   if (!config) {
-    res.status(400).send("Invalid or missing addon configuration.");
+    const isJson =
+      req.xhr ||
+      req.path.endsWith(".json") ||
+      (req.headers.accept && req.headers.accept.includes("application/json"));
+    if (isJson) {
+      res.status(400).json({ error: "Invalid or missing addon configuration." });
+      return;
+    }
+    res.status(400).type("html").send(
+      renderErrorPage({
+        statusCode: 400,
+        title: "Invalid Configuration",
+        message: "The addon configuration token in your URL is invalid or malformed. Return to the configuration page to generate a fresh link.",
+        path: req.originalUrl || req.path,
+      })
+    );
     return;
   }
   res.locals.config = config as AddonConfig;
@@ -339,6 +355,53 @@ app.get("/:config/stream/:type/:id.json", withConfig, async (req, res) => {
     console.error("Stream handler error:", err);
     res.json({ streams: [] });
   }
+});
+
+// 404 Handler for all unknown routes
+app.use((req: Request, res: Response) => {
+  const isJson =
+    req.xhr ||
+    req.path.endsWith(".json") ||
+    req.path.startsWith("/api/") ||
+    (req.headers.accept && req.headers.accept.includes("application/json"));
+
+  if (isJson) {
+    res.status(404).json({ error: "Not Found", path: req.path });
+    return;
+  }
+
+  res.status(404).type("html").send(
+    renderErrorPage({
+      statusCode: 404,
+      title: "Page Not Found",
+      message: "The requested route does not exist on this server. Check your link or return to the configuration page below.",
+      path: req.originalUrl || req.path,
+    })
+  );
+});
+
+// Global 500 error handler
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+  console.error("Unhandled server error:", err);
+  const isJson =
+    req.xhr ||
+    req.path.endsWith(".json") ||
+    req.path.startsWith("/api/") ||
+    (req.headers.accept && req.headers.accept.includes("application/json"));
+
+  if (isJson) {
+    res.status(500).json({ error: "Internal Server Error" });
+    return;
+  }
+
+  res.status(500).type("html").send(
+    renderErrorPage({
+      statusCode: 500,
+      title: "Internal Server Error",
+      message: "An unexpected error occurred while processing your request. Please try again or return to the configuration page.",
+      path: req.originalUrl || req.path,
+    })
+  );
 });
 
 export default app;

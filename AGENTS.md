@@ -131,6 +131,7 @@ Stremio / Nuvio Client
 | [`src/tvdb.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/src/tvdb.ts) | Optional TVDB v4 search client with JWT token caching and key validation helper (`testTVDBKey`). |
 | [`src/config.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/src/config.ts) | Configuration schema, base64url serialization, environment variable fallbacks, and validation. |
 | [`src/configure.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/src/configure.ts) | Unslop-designed configuration page with GitHub repo link, `.env` detection banner, live key testers, Stremio/Nuvio guides. |
+| [`src/errorPage.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/src/errorPage.ts) | Responsive, no-scrolling 404, 400, and 500 error pages styled with Unslop aesthetic and quick navigation actions. |
 | [`src/index.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/src/index.ts) | Node HTTP server bootstrap with English startup logging. |
 | [`api/index.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/api/index.ts) | Vercel Serverless Function entry point exporting the Express app. |
 | [`public/logo.svg`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/public/logo.svg) | Master isometric vector mark with rounded container (85% canvas fill). |
