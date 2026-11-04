@@ -185,7 +185,7 @@ async function handleStream(
 
       const titleLines = [
         `${targetMeta?.name || parsed.cleanTitle || torrent.name}${parsed.year ? ` (${parsed.year})` : ""}`,
-        `📦 ${formatBytes(file.size)} | 🎬 ${qualityParts.join(" ") || "Direct Stream"}`,
+        `${formatBytes(file.size)} | ${qualityParts.join(" ") || "Direct Stream"}`,
       ];
 
       streams.push({
@@ -213,7 +213,7 @@ async function handleStream(
 
       const titleLines = [
         `${targetMeta?.name || parsed.cleanTitle} S${sNum}E${eNum}`,
-        `📦 ${formatBytes(file.size)} | 🎬 ${qualityParts.join(" ") || "Direct Stream"}`,
+        `${formatBytes(file.size)} | ${qualityParts.join(" ") || "Direct Stream"}`,
       ];
 
       streams.push({
