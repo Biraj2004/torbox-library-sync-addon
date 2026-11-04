@@ -664,18 +664,6 @@ export function configurePage(config: AddonConfig | null): string {
 (function() {
   'use strict';
 
-  // 1. Suppress console inspection and error dumping
-  try {
-    var _n = function() {};
-    window.console.log = _n;
-    window.console.info = _n;
-    window.console.warn = _n;
-    window.console.error = _n;
-    window.console.debug = _n;
-    window.console.dir = _n;
-    window.console.table = _n;
-  } catch (e) {}
-
   var MASTER_SALT = "torbox-library-sync-addon-v2-master-secret-salt-2026";
   var cachedCryptoKey = null;
   var currentToken = ${JSON.stringify(initialEncryptedToken)};
@@ -692,8 +680,8 @@ export function configurePage(config: AddonConfig | null): string {
       binary += String.fromCharCode(uint8[i]);
     }
     return btoa(binary)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
+      .split('+').join('-')
+      .split('/').join('_')
       .replace(/=+$/, '');
   }
 
@@ -819,6 +807,8 @@ export function configurePage(config: AddonConfig | null): string {
     var el = document.getElementById(id);
     el.addEventListener('input', scheduleRefresh);
     el.addEventListener('change', scheduleRefresh);
+    el.addEventListener('paste', function() { setTimeout(scheduleRefresh, 20); });
+    el.addEventListener('keyup', scheduleRefresh);
   });
 
   // Key Tester Helper with encrypted payload masking
@@ -860,6 +850,7 @@ export function configurePage(config: AddonConfig | null): string {
         if (data.plan) msg += ' (' + data.plan + ')';
         statusEl.textContent = msg;
         statusEl.className = 'test-status success';
+        scheduleRefresh();
       } else {
         statusEl.textContent = data.error || 'Invalid API key';
         statusEl.className = 'test-status error';
