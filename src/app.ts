@@ -248,7 +248,7 @@ const candidatePublicDirs = [
 ];
 const publicDir = candidatePublicDirs.find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), "public");
 
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, { index: false }));
 
 // Explicit high-priority asset routes with correct MIME types
 app.get("/favicon.svg", (_req, res) => {
@@ -299,7 +299,7 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.get("/", (_req, res) => res.redirect("/configure"));
+app.get("/", (_req, res) => res.redirect(307, "/configure"));
 
 app.get("/configure", (_req, res) => {
   const defaultCfg = getDefaultConfig();
