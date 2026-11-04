@@ -288,6 +288,14 @@ app.get("/:config/logo.svg", (_req, res) => res.redirect("/logo.svg"));
 app.use((_req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+  );
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "no-referrer");
   next();
 });
 
@@ -298,24 +306,38 @@ app.get("/configure", (_req, res) => {
   res.type("html").send(configurePage(defaultCfg));
 });
 
-// Endpoint to live-test API keys (TorBox, MDBList, TVDB) without saving anything
+// Endpoint to live-test API keys (TorBox, MDBList, TVDB) using encrypted token or raw key
 app.post("/api/test-key", async (req, res) => {
-  const { apiKey, service = "torbox" } = req.body || {};
-  if (!apiKey || typeof apiKey !== "string") {
-    res.status(400).json({ valid: false, error: "Missing API key" });
+  const { apiKey, token, service = "torbox" } = req.body || {};
+  let targetKey = "";
+
+  if (typeof token === "string" && token.trim()) {
+    const decoded = decodeConfig(token.trim());
+    if (decoded) {
+      if (service === "torbox") targetKey = decoded.torboxApiKey;
+      else if (service === "mdblist") targetKey = decoded.mdblistApiKey || "";
+      else if (service === "tvdb") targetKey = decoded.tvdbApiKey || "";
+    }
+  } else if (typeof apiKey === "string" && apiKey.trim()) {
+    targetKey = apiKey.trim();
+  }
+
+  if (!targetKey) {
+    res.status(400).json({ valid: false, error: "Missing or invalid API key" });
     return;
   }
-  const cleanKey = apiKey.trim();
+
+  const cleanKey = targetKey.trim();
 
   if (service === "torbox") {
     const result = await testTorboxKey(cleanKey);
-    res.json(result);
+    res.json({ valid: result.valid, plan: result.plan, error: result.error });
   } else if (service === "mdblist") {
     const result = await testMDBListKey(cleanKey);
-    res.json(result);
+    res.json({ valid: result.valid, error: result.error });
   } else if (service === "tvdb") {
     const result = await testTVDBKey(cleanKey);
-    res.json(result);
+    res.json({ valid: result.valid, error: result.error });
   } else {
     res.status(400).json({ valid: false, error: "Unknown service provider" });
   }

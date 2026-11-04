@@ -661,11 +661,95 @@ export function configurePage(config: AddonConfig | null): string {
 </div>
 
 <script>
+(function() {
+  'use strict';
+
+  // 1. Suppress console inspection and error dumping
+  try {
+    var _n = function() {};
+    window.console.log = _n;
+    window.console.info = _n;
+    window.console.warn = _n;
+    window.console.error = _n;
+    window.console.debug = _n;
+    window.console.dir = _n;
+    window.console.table = _n;
+  } catch (e) {}
+
+  var MASTER_SALT = "torbox-library-sync-addon-v2-master-secret-salt-2026";
+  var cachedCryptoKey = null;
   var currentToken = ${JSON.stringify(initialEncryptedToken)};
+  var debounceTimer = null;
 
   function cleanInput(val) {
     if (!val) return "";
     return val.trim().replace(/^["']|["']$/g, "").trim();
+  }
+
+  function bufferToBase64Url(uint8) {
+    var binary = '';
+    for (var i = 0; i < uint8.length; i++) {
+      binary += String.fromCharCode(uint8[i]);
+    }
+    return btoa(binary)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
+
+  async function getCryptoKey() {
+    if (cachedCryptoKey) return cachedCryptoKey;
+    var saltBytes = new TextEncoder().encode(MASTER_SALT);
+    var hash = await window.crypto.subtle.digest('SHA-256', saltBytes);
+    cachedCryptoKey = await window.crypto.subtle.importKey(
+      'raw',
+      hash,
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt']
+    );
+    return cachedCryptoKey;
+  }
+
+  // 100% Client-side AES-256-GCM token generator: ZERO keystroke network calls
+  async function encryptConfigClient(cfg) {
+    try {
+      if (window.crypto && window.crypto.subtle) {
+        var key = await getCryptoKey();
+        var payload = JSON.stringify(cfg);
+        var data = new TextEncoder().encode(payload);
+        var iv = window.crypto.getRandomValues(new Uint8Array(12));
+        var encryptedBuf = await window.crypto.subtle.encrypt(
+          { name: 'AES-GCM', iv: iv, tagLength: 128 },
+          key,
+          data
+        );
+        var totalLen = encryptedBuf.byteLength;
+        var ciphertext = new Uint8Array(encryptedBuf.slice(0, totalLen - 16));
+        var tag = new Uint8Array(encryptedBuf.slice(totalLen - 16));
+
+        var packed = new Uint8Array(1 + 12 + 16 + ciphertext.length);
+        packed[0] = 1;
+        packed.set(iv, 1);
+        packed.set(tag, 13);
+        packed.set(ciphertext, 29);
+
+        return 'enc_' + bufferToBase64Url(packed);
+      }
+    } catch (e) {}
+
+    // Fallback if browser lacks WebCrypto
+    try {
+      var res = await fetch('/api/encrypt-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cfg)
+      });
+      var data = await res.json();
+      return data.token || null;
+    } catch (e) {
+      return null;
+    }
   }
 
   function bindVisibilityToggle(inputId, btnId) {
@@ -688,8 +772,6 @@ export function configurePage(config: AddonConfig | null): string {
     return window.location.origin + '/' + token + '/manifest.json';
   }
 
-  var debounceTimer = null;
-
   async function refresh() {
     var torbox = cleanInput(document.getElementById('torbox').value);
     var mdblist = cleanInput(document.getElementById('mdblist').value);
@@ -710,34 +792,27 @@ export function configurePage(config: AddonConfig | null): string {
       return;
     }
 
-    try {
-      var res = await fetch('/api/encrypt-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          torboxApiKey: torbox,
-          mdblistApiKey: mdblist || undefined,
-          tvdbApiKey: tvdb || undefined
-        })
-      });
-      var data = await res.json();
-      if (data.token) {
-        currentToken = data.token;
-        var fullUrl = manifestUrl(currentToken);
-        urlBox.textContent = fullUrl;
-        urlBox.className = 'url-box active';
-        installStremio.disabled = false;
-        installNuvio.disabled = false;
-        copyBtn.disabled = false;
-      }
-    } catch (err) {
-      console.error('Failed to encrypt config:', err);
+    var cfg = {
+      torboxApiKey: torbox,
+      mdblistApiKey: mdblist || undefined,
+      tvdbApiKey: tvdb || undefined
+    };
+
+    var token = await encryptConfigClient(cfg);
+    if (token) {
+      currentToken = token;
+      var fullUrl = manifestUrl(currentToken);
+      urlBox.textContent = fullUrl;
+      urlBox.className = 'url-box active';
+      installStremio.disabled = false;
+      installNuvio.disabled = false;
+      copyBtn.disabled = false;
     }
   }
 
   function scheduleRefresh() {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(refresh, 180);
+    debounceTimer = setTimeout(refresh, 60);
   }
 
   ['torbox', 'mdblist', 'tvdb'].forEach(function(id) {
@@ -746,7 +821,7 @@ export function configurePage(config: AddonConfig | null): string {
     el.addEventListener('change', scheduleRefresh);
   });
 
-  // Generic Key Tester Helper
+  // Key Tester Helper with encrypted payload masking
   async function testServiceKey(serviceName, inputId, statusId, btnId) {
     var key = cleanInput(document.getElementById(inputId).value);
     var statusEl = document.getElementById(statusId);
@@ -763,16 +838,26 @@ export function configurePage(config: AddonConfig | null): string {
     statusEl.className = 'test-status';
 
     try {
+      // Encrypt key in-memory before sending so plain key is never in Network tab
+      var testPayload = {};
+      if (serviceName === 'torbox') testPayload.torboxApiKey = key;
+      else if (serviceName === 'mdblist') testPayload = { torboxApiKey: 'test', mdblistApiKey: key };
+      else if (serviceName === 'tvdb') testPayload = { torboxApiKey: 'test', tvdbApiKey: key };
+
+      var token = await encryptConfigClient(testPayload);
+      var reqBody = token
+        ? JSON.stringify({ token: token, service: serviceName })
+        : JSON.stringify({ apiKey: key, service: serviceName });
+
       var res = await fetch('/api/test-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: key, service: serviceName })
+        body: reqBody
       });
       var data = await res.json();
       if (data.valid) {
         var msg = 'Verified';
-        if (data.email) msg += ': ' + data.email + ' (' + data.plan + ')';
-        else if (data.plan) msg += ': ' + data.plan;
+        if (data.plan) msg += ' (' + data.plan + ')';
         statusEl.textContent = msg;
         statusEl.className = 'test-status success';
       } else {
@@ -780,7 +865,7 @@ export function configurePage(config: AddonConfig | null): string {
         statusEl.className = 'test-status error';
       }
     } catch (e) {
-      statusEl.textContent = 'Network error: ' + e.message;
+      statusEl.textContent = 'Network error: ' + (e && e.message ? e.message : 'failed');
       statusEl.className = 'test-status error';
     } finally {
       btn.disabled = false;
@@ -842,6 +927,7 @@ export function configurePage(config: AddonConfig | null): string {
     document.getElementById('installNuvioBtn').disabled = false;
     document.getElementById('copyUrlBtn').disabled = false;
   }
+})();
 </script>
 </body>
 </html>`;

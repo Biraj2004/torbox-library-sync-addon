@@ -71,7 +71,7 @@ export async function getMyList(
  */
 export async function testTorboxKey(
   apiKey: string,
-): Promise<{ valid: boolean; email?: string; plan?: string; error?: string }> {
+): Promise<{ valid: boolean; plan?: string; error?: string }> {
   try {
     const res = await fetch(`${API_BASE}/user/me`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -96,7 +96,6 @@ export async function testTorboxKey(
 
     return {
       valid: true,
-      email: json.data.email,
       plan: planStr,
     };
   } catch (err: any) {

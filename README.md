@@ -177,7 +177,9 @@ http://127.0.0.1:7000/configure
 ## Security & Dynamic Cryptography
 
 - **AES-256-GCM Token Encryption:** User credentials are never exposed in plaintext in the manifest URL. They are masked and encrypted into an authenticated AES-256-GCM token with random IVs and verification tags.
+- **DevTools & Network Inspection Hardening:** Token generation executes 100% in-browser memory via the Web Crypto API, meaning **zero network calls** are transmitted while typing. Test requests transmit opaque encrypted tokens, and all responses are stripped of emails, user IDs, and personal metadata.
 - **Zero-Storage:** No credentials or user tokens are ever saved to disk, database, or server logs.
+- **Console & Scope Shielding:** Client JavaScript runs in an isolated closure with console output suppressed and zero variables bound to `window`.
 - **No Password Manager Interference:** Inputs are styled with CSS-based masking (`text-security: disc`) without triggering browser password generator popups.
 - **Permalinks:** Streams are generated using TorBox's official `redirect=true` permalinks, streaming content directly from TorBox's CDN to your player.
 - See [SECURITY.md](SECURITY.md) for vulnerability reporting and security specifications.

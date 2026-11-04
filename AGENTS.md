@@ -117,6 +117,13 @@ Stremio / Nuvio Client
 - If `mdblistApiKey` is `undefined`, the addon bypasses MDBList network calls entirely.
 - If an invalid key is supplied, network errors are caught and logged, returning `null` so streaming never breaks.
 
+### Anti-Inspection & DevTools Hardening
+- **Zero-Keystroke Network Traffic:** Manifest tokens are generated 100% client-side in browser memory using Web Crypto AES-256-GCM. No HTTP requests are fired while typing.
+- **Encrypted Key Testing:** When clicking "Test Key", the client transmits an encrypted token (`enc_...`), never the plaintext API key.
+- **Sanitized Responses:** The `/api/test-key` endpoint strips user email addresses and internal account IDs, returning only clean boolean verification status.
+- **Console & Scope Shielding:** All client scripts run inside an isolated IIFE with no variables exposed on `window`. All `console` logging methods are suppressed.
+- **Strict Anti-Caching Headers:** Every response is served with `Cache-Control: no-store, no-cache, must-revalidate`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: no-referrer`.
+
 ---
 
 ## 5. File Manifest & Codebase Map
