@@ -1,0 +1,42 @@
+{
+  "name": "torbox-library-sync-addon",
+  "version": "2.0.0",
+  "description": "Instant personal TorBox cloud streamer for Stremio and Nuvio. Plays your cached movies and TV series with accurate metadata matching.",
+  "author": "Biraj Sarkar <birajsarkar67@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://torbox-library-sync-addon.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Biraj2004/torbox-library-sync-addon.git"
+  },
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.x"
+  },
+  "scripts": {
+    "build": "tsc || node node_modules/typescript/lib/tsc.js",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "dev": "node --env-file-if-exists=.env -r ts-node/register src/index.ts"
+  },
+  "keywords": [
+    "stremio",
+    "stremio-addon",
+    "nuvio",
+    "torbox",
+    "debrid",
+    "streaming",
+    "metadata",
+    "library-sync"
+  ],
+  "dependencies": {
+    "express": "^4.22.2",
+    "stremio-addon-sdk": "^1.6.10"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.25",
+    "@types/node": "^22.10.0",
+    "@types/stremio-addon-sdk": "^1.6.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
