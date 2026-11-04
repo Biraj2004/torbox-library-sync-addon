@@ -144,6 +144,11 @@ Stremio / Nuvio Client
 | [`src/errorPage.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/src/errorPage.ts) | Responsive, no-scrolling 404, 400, and 500 error pages styled with Unslop aesthetic and quick navigation actions. |
 | [`src/index.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/src/index.ts) | Node HTTP server bootstrap with English startup logging. |
 | [`api/index.ts`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/api/index.ts) | Vercel Serverless Function entry point exporting the Express app. |
+| [`Dockerfile`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/Dockerfile) | Production-grade multi-stage Docker build for self-hosting with unprivileged user. |
+| [`docker-compose.yml`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/docker-compose.yml) | Ready-to-run container compose configuration for home-lab servers. |
+| [`public/logo.png`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/public/logo.png) | 512x512 square edge-to-edge vibrant blue isometric logo mark. |
+| [`public/logo-black-white.png`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/public/logo-black-white.png) | 512x512 square edge-to-edge dark monochrome logo variant. |
+| [`public/og-image.png`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/public/og-image.png) | 1200x630 Open Graph / Twitter social media sharing banner. |
 | [`public/logo.svg`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/public/logo.svg) | Master isometric vector mark with rounded container (85% canvas fill). |
 | [`public/favicon.svg`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/public/favicon.svg) | High-contrast 32x32 favicon filling 93% of the viewBox edge-to-edge for tab readability. |
 | [`public/robots.txt`](file:///e:/01.%20GitHub%20Repo%20Projects/torbox-librarian-addon/public/robots.txt) | Search crawler and AI bot permissions (`GPTBot`, `ClaudeBot`, `PerplexityBot`). |

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/logo.svg" alt="Torbox Library Sync Addon Logo" width="96" height="96" />
+  <img src="public/logo.png" alt="Torbox Library Sync Addon Logo" width="100" height="100" />
   <h1>Torbox Library Sync Addon</h1>
   <p><strong>High-performance, privacy-first personal TorBox cloud streamer for Stremio and Nuvio with sub-millisecond deterministic metadata matching</strong></p>
 
@@ -16,11 +16,13 @@
     <a href="https://torbox-library-sync-addon.vercel.app"><strong>Launch Web App</strong></a> •
     <a href="https://iambiraj.vercel.app"><strong>Developer Portfolio</strong></a> •
     <a href="#overview">Overview</a> •
+    <a href="#key-features">Key Features</a> •
     <a href="#supported-torbox-media-types">Supported Media</a> •
     <a href="#dynamic-stream-labeling">Stream Labels</a> •
     <a href="#architecture--metadata-waterfall">Architecture</a> •
-    <a href="#dual-operation-modes">Dual Modes</a> •
-    <a href="#security--client-side-cryptography">Security</a>
+    <a href="#docker--homelab-self-hosting">Docker</a> •
+    <a href="#brand-assets">Brand Assets</a> •
+    <a href="#license--copyleft-terms">License</a>
   </p>
 </div>
 
@@ -36,6 +38,19 @@ However, upon refreshing Stremio, the media often **still does not appear** beca
 3. No direct connection existed between Stremio and your personal TorBox cloud storage.
 
 **Torbox Library Sync Addon** bridges this gap. Created by [Biraj Sarkar](https://iambiraj.vercel.app), it connects directly to your personal TorBox account, indexes your **Torrents**, **Web Downloads (DDL)**, and **Usenet** files in parallel, resolves media metadata deterministically in under 1 millisecond, and generates direct, high-speed CDN streams.
+
+---
+
+## Key Features
+
+- **Concurrent Multi-Namespace Synchronization:** Queries Torrents (`/torrents/mylist`), Web Downloads (`/webdl/mylist`), and Usenet (`/usenet/mylist`) simultaneously using `Promise.allSettled`.
+- **Zero-AI Deterministic Scene Parser (< 1 ms):** Cleans filenames, strips scene noise, and extracts qualities (`4K`, `1080p`), codecs (`x265`, `x264`, `AV1`), HDR (`DV`, `HDR10+`), bit-depths (`10-bit`), audio (`Atmos`, `TrueHD`, `DDP`, `DTS`), channels (`7.1`, `5.1`), and languages (`Bengali`, `Hindi`, `English`, Multi Audio).
+- **Multi-Episode Pack Span Matching:** Resolves two-part and multi-episode files (e.g. `Show.S01E01-E02.mkv`, `1x01-02`, directory-based season packs) so clicking Episode 2 plays the episode file automatically.
+- **In-Flight Request Deduplication & Burst Caching:** Concurrent requests for the same user share a single in-flight network call, followed by a 20-second in-memory burst cache for sub-millisecond responses and TorBox rate-limit protection.
+- **Stremio Playback Behavior Hints:** Sets `bingieGroup` for seamless episode auto-play, `filename` for external player title resolution, and `notWebReady` for smart browser fallback on complex codecs.
+- **Enhanced Dynamic Stream Labeling:** Renders rich release metadata and conditional tags without empty lines, with clean single-file titles (no duplicate folder paths).
+- **Client-Side Web Crypto AES-256-GCM:** Encrypts user API keys entirely in browser memory with a random 12-byte IV. Operates completely statelessly with zero database persistence.
+- **Docker & HomeLab Ready:** Includes a production-grade multi-stage `Dockerfile` and `docker-compose.yml` for self-hosting on TrueNAS, Unraid, and Synology.
 
 ---
 
@@ -219,6 +234,20 @@ docker run -d --name torbox-sync -p 7000:7000 --restart unless-stopped torbox-li
 ```
 
 Access the configuration page at `http://<your-server-ip>:7000/configure`.
+
+---
+
+## Brand Assets
+
+The repository includes high-resolution, pixel-perfect brand assets ready for social cards, app stores, and client embedding:
+
+| Asset | Format | Dimensions | Purpose |
+| :--- | :--- | :--- | :--- |
+| [`public/logo.png`](public/logo.png) | PNG | 512 × 512 | Square edge-to-edge vibrant blue isometric logo mark |
+| [`public/logo-black-white.png`](public/logo-black-white.png) | PNG | 512 × 512 | Square edge-to-edge dark monochrome variant |
+| [`public/og-image.png`](public/og-image.png) | PNG | 1200 × 630 | Open Graph / Twitter social sharing preview banner |
+| [`public/logo.svg`](public/logo.svg) | SVG | Vector | Scalable vector logo mark with rounded squircle container |
+| [`public/favicon.svg`](public/favicon.svg) | SVG | 32 × 32 | High-contrast browser tab favicon filling 93% of canvas |
 
 ---
 
