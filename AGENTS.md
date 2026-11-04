@@ -151,3 +151,4 @@ When modifying or extending this codebase, adhere to these rules:
 4. **Clean Optional Propagation:** When adding optional configuration keys, ensure they default to `undefined` if empty and provide fallback to Cinemeta.
 5. **No Secrets in Git:** Never commit `.env` or personal tokens. Always verify git status before committing.
 6. **Verify Before Asserting:** Run `npm run build` and sanity tests to confirm that TypeScript compiles cleanly before asserting task completion.
+

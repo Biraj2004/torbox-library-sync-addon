@@ -1,4 +1,4 @@
-import { AddonConfig, ADDON_NAME } from "./config";
+import { AddonConfig, ADDON_NAME, encryptConfig } from "./config";
 
 function esc(v: string | undefined): string {
   return (v ?? "").replace(/"/g, "&quot;").replace(/</g, "&lt;");
@@ -7,6 +7,7 @@ function esc(v: string | undefined): string {
 export function configurePage(config: AddonConfig | null): string {
   const cfg = config ?? { torboxApiKey: "" };
   const hasEnvKeys = Boolean(cfg.torboxApiKey);
+  const initialEncryptedToken = hasEnvKeys ? encryptConfig(cfg) : "";
 
   return `<!doctype html>
 <html lang="en">
@@ -149,22 +150,17 @@ export function configurePage(config: AddonConfig | null): string {
   .env-banner strong {
     font-weight: 600;
   }
-  .privacy-banner {
+  .crypto-banner {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    background: var(--bg-input);
-    border: 1px solid var(--border-subtle);
+    align-items: center;
+    gap: 8px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
     border-radius: 8px;
     padding: 10px 12px;
     margin-bottom: 20px;
     font-size: 12px;
-    color: var(--text-secondary);
-  }
-  .privacy-banner strong {
-    color: var(--text-primary);
-    display: block;
-    margin-bottom: 2px;
+    color: #93c5fd;
   }
   .field-group {
     margin-bottom: 18px;
@@ -201,9 +197,10 @@ export function configurePage(config: AddonConfig | null): string {
   .input-wrapper {
     position: relative;
     display: flex;
-    gap: 8px;
+    gap: 6px;
   }
-  input[type="text"], input[type="password"] {
+  /* Mask text using CSS to completely eliminate browser password autofill popups */
+  .key-input {
     flex: 1;
     background: var(--bg-input);
     border: 1px solid var(--border-subtle);
@@ -213,10 +210,30 @@ export function configurePage(config: AddonConfig | null): string {
     font-size: 13px;
     font-family: inherit;
     transition: border-color 0.15s ease;
+    -webkit-text-security: disc;
+    text-security: disc;
   }
-  input:focus {
+  .key-input.revealed {
+    -webkit-text-security: none !important;
+    text-security: none !important;
+  }
+  .key-input:focus {
     outline: none;
     border-color: var(--border-focus);
+  }
+  .btn-icon {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    padding: 0 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-icon:hover {
+    color: var(--text-primary);
+    background: #1c222e;
   }
   .btn-test {
     background: var(--bg-elevated);
@@ -286,8 +303,17 @@ export function configurePage(config: AddonConfig | null): string {
     opacity: 0.35;
     cursor: not-allowed;
   }
-  .url-box {
+  .url-box-container {
     margin-top: 16px;
+  }
+  .url-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .url-box {
     background: var(--bg-input);
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
@@ -375,12 +401,11 @@ export function configurePage(config: AddonConfig | null): string {
     hasEnvKeys
       ? `<div class="env-banner">
           <span>●</span>
-          <div><strong>Environment Configuration Loaded:</strong> Keys detected from your server. Install directly or generate portable links below.</div>
+          <div><strong>Environment Configuration Loaded:</strong> Keys detected from your server. Install directly or generate encrypted portable links below.</div>
         </div>`
-      : `<div class="privacy-banner">
-          <div>
-            <strong>Stateless &amp; Private:</strong> All keys are encoded into your personal manifest URL. Nothing is saved on the server or in database storage.
-          </div>
+      : `<div class="crypto-banner">
+          <span>🔒</span>
+          <div><strong>Encrypted &amp; Masked:</strong> Keys are transformed into a tamper-proof AES-256-GCM token. No plain API keys are ever visible in the manifest URL.</div>
         </div>`
   }
 
@@ -393,7 +418,8 @@ export function configurePage(config: AddonConfig | null): string {
       </div>
       <div class="field-desc">Your personal token from torbox.app/settings</div>
       <div class="input-wrapper">
-        <input id="torbox" type="password" spellcheck="false" placeholder="Paste your TorBox API token" value="${esc(cfg.torboxApiKey)}" autocomplete="new-password" />
+        <input id="torbox" type="text" class="key-input" spellcheck="false" placeholder="Paste your TorBox API token" value="${esc(cfg.torboxApiKey)}" autocomplete="off" autocorrect="off" autocapitalize="off" data-1p-ignore="true" data-lpignore="true" data-form-type="other" />
+        <button type="button" class="btn-icon" id="toggleTorboxBtn" title="Show/Hide">👁</button>
         <button type="button" class="btn-test" id="testTorboxBtn">Test Key</button>
       </div>
       <div class="test-status" id="torboxStatus"></div>
@@ -407,7 +433,8 @@ export function configurePage(config: AddonConfig | null): string {
       </div>
       <div class="field-desc">Used for alternative titles, international releases, and fuzzy searches</div>
       <div class="input-wrapper">
-        <input id="mdblist" type="password" spellcheck="false" placeholder="Optional MDBList API key" value="${esc(cfg.mdblistApiKey)}" autocomplete="new-password" />
+        <input id="mdblist" type="text" class="key-input" spellcheck="false" placeholder="Optional MDBList API key" value="${esc(cfg.mdblistApiKey)}" autocomplete="off" autocorrect="off" autocapitalize="off" data-1p-ignore="true" data-lpignore="true" data-form-type="other" />
+        <button type="button" class="btn-icon" id="toggleMdblistBtn" title="Show/Hide">👁</button>
         <button type="button" class="btn-test" id="testMdblistBtn">Test Key</button>
       </div>
       <div class="test-status" id="mdblistStatus"></div>
@@ -421,7 +448,8 @@ export function configurePage(config: AddonConfig | null): string {
       </div>
       <div class="field-desc">Used for TV series season packs &amp; complex episode mapping</div>
       <div class="input-wrapper">
-        <input id="tvdb" type="password" spellcheck="false" placeholder="Optional TVDB API key" value="${esc(cfg.tvdbApiKey)}" autocomplete="new-password" />
+        <input id="tvdb" type="text" class="key-input" spellcheck="false" placeholder="Optional TVDB API key" value="${esc(cfg.tvdbApiKey)}" autocomplete="off" autocorrect="off" autocapitalize="off" data-1p-ignore="true" data-lpignore="true" data-form-type="other" />
+        <button type="button" class="btn-icon" id="toggleTvdbBtn" title="Show/Hide">👁</button>
         <button type="button" class="btn-test" id="testTvdbBtn">Test Key</button>
       </div>
       <div class="test-status" id="tvdbStatus"></div>
@@ -433,7 +461,13 @@ export function configurePage(config: AddonConfig | null): string {
       <button type="button" class="btn btn-secondary btn-full" id="copyUrlBtn" disabled>Copy Addon Manifest URL</button>
     </div>
 
-    <div class="url-box" id="urlBox">Enter your TorBox API key to generate an installable link...</div>
+    <div class="url-box-container">
+      <div class="url-label">
+        <span>GENERATED MANIFEST URL</span>
+        <span id="cryptoBadge">🔒 AES-256-GCM Dynamic Masking</span>
+      </div>
+      <div class="url-box" id="urlBox">Enter your TorBox API key to generate an installable link...</div>
+    </div>
   </form>
 
   <div class="instructions">
@@ -461,42 +495,44 @@ export function configurePage(config: AddonConfig | null): string {
 </div>
 
 <script>
+  var currentToken = ${JSON.stringify(initialEncryptedToken)};
+
   function cleanInput(val) {
     if (!val) return "";
     return val.trim().replace(/^["']|["']$/g, "").trim();
   }
 
-  function toB64Url(str) {
-    var b64 = btoa(unescape(encodeURIComponent(str)));
-    return b64.replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');
+  function bindVisibilityToggle(inputId, btnId) {
+    var input = document.getElementById(inputId);
+    var btn = document.getElementById(btnId);
+    btn.addEventListener('click', function() {
+      input.classList.toggle('revealed');
+      btn.textContent = input.classList.contains('revealed') ? '✕' : '👁';
+    });
   }
 
-  function getCleanConfig() {
-    var torbox = cleanInput(document.getElementById('torbox').value);
-    if (!torbox) return null;
+  bindVisibilityToggle('torbox', 'toggleTorboxBtn');
+  bindVisibilityToggle('mdblist', 'toggleMdblistBtn');
+  bindVisibilityToggle('tvdb', 'toggleTvdbBtn');
 
+  function manifestUrl(token) {
+    return window.location.origin + '/' + token + '/manifest.json';
+  }
+
+  var debounceTimer = null;
+
+  async function refresh() {
+    var torbox = cleanInput(document.getElementById('torbox').value);
     var mdblist = cleanInput(document.getElementById('mdblist').value);
     var tvdb = cleanInput(document.getElementById('tvdb').value);
 
-    var obj = { torboxApiKey: torbox };
-    if (mdblist) obj.mdblistApiKey = mdblist;
-    if (tvdb) obj.tvdbApiKey = tvdb;
-
-    return toB64Url(JSON.stringify(obj));
-  }
-
-  function manifestUrl(enc) {
-    return window.location.origin + '/' + enc + '/manifest.json';
-  }
-
-  function refresh() {
-    var enc = getCleanConfig();
     var urlBox = document.getElementById('urlBox');
     var installStremio = document.getElementById('installStremioBtn');
     var installNuvio = document.getElementById('installNuvioBtn');
     var copyBtn = document.getElementById('copyUrlBtn');
 
-    if (!enc) {
+    if (!torbox) {
+      currentToken = "";
       urlBox.textContent = 'Enter your TorBox API key to generate an installable link...';
       urlBox.className = 'url-box';
       installStremio.disabled = true;
@@ -505,18 +541,40 @@ export function configurePage(config: AddonConfig | null): string {
       return;
     }
 
-    var fullUrl = manifestUrl(enc);
-    urlBox.textContent = fullUrl;
-    urlBox.className = 'url-box active';
-    installStremio.disabled = false;
-    installNuvio.disabled = false;
-    copyBtn.disabled = false;
+    try {
+      var res = await fetch('/api/encrypt-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          torboxApiKey: torbox,
+          mdblistApiKey: mdblist || undefined,
+          tvdbApiKey: tvdb || undefined
+        })
+      });
+      var data = await res.json();
+      if (data.token) {
+        currentToken = data.token;
+        var fullUrl = manifestUrl(currentToken);
+        urlBox.textContent = fullUrl;
+        urlBox.className = 'url-box active';
+        installStremio.disabled = false;
+        installNuvio.disabled = false;
+        copyBtn.disabled = false;
+      }
+    } catch (err) {
+      console.error('Failed to encrypt config:', err);
+    }
+  }
+
+  function scheduleRefresh() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(refresh, 180);
   }
 
   ['torbox', 'mdblist', 'tvdb'].forEach(function(id) {
     var el = document.getElementById(id);
-    el.addEventListener('input', refresh);
-    el.addEventListener('change', refresh);
+    el.addEventListener('input', scheduleRefresh);
+    el.addEventListener('change', scheduleRefresh);
   });
 
   // Generic Key Tester Helper
@@ -573,24 +631,21 @@ export function configurePage(config: AddonConfig | null): string {
 
   // Stremio Install
   document.getElementById('installStremioBtn').addEventListener('click', function() {
-    var enc = getCleanConfig();
-    if (!enc) return;
-    window.location.href = manifestUrl(enc).replace(/^https?:/, 'stremio:');
+    if (!currentToken) return;
+    window.location.href = manifestUrl(currentToken).replace(/^https?:/, 'stremio:');
   });
 
   // Nuvio Open
   document.getElementById('installNuvioBtn').addEventListener('click', function() {
-    var enc = getCleanConfig();
-    if (!enc) return;
-    var target = 'https://app.nuvio.stream/?addon=' + encodeURIComponent(manifestUrl(enc));
+    if (!currentToken) return;
+    var target = 'https://app.nuvio.stream/?addon=' + encodeURIComponent(manifestUrl(currentToken));
     window.open(target, '_blank');
   });
 
   // Copy Addon Link
   document.getElementById('copyUrlBtn').addEventListener('click', function() {
-    var enc = getCleanConfig();
-    if (!enc) return;
-    var url = manifestUrl(enc);
+    if (!currentToken) return;
+    var url = manifestUrl(currentToken);
     navigator.clipboard.writeText(url);
     var btn = document.getElementById('copyUrlBtn');
     var orig = btn.textContent;
@@ -609,8 +664,15 @@ export function configurePage(config: AddonConfig | null): string {
     });
   });
 
-  // Initial check on page load
-  refresh();
+  // Initial load
+  if (currentToken) {
+    var urlBox = document.getElementById('urlBox');
+    urlBox.textContent = manifestUrl(currentToken);
+    urlBox.className = 'url-box active';
+    document.getElementById('installStremioBtn').disabled = false;
+    document.getElementById('installNuvioBtn').disabled = false;
+    document.getElementById('copyUrlBtn').disabled = false;
+  }
 </script>
 </body>
 </html>`;

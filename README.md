@@ -174,9 +174,11 @@ http://127.0.0.1:7000/configure
 
 ---
 
-## 🔒 Security & Stateless Privacy
+## 🔒 Security & Dynamic Cryptography
 
+- **AES-256-GCM Token Encryption:** User credentials are never exposed in plaintext in the manifest URL. They are masked and encrypted into an authenticated AES-256-GCM token with random IVs and verification tags.
 - **Zero-Storage:** No credentials or user tokens are ever saved to disk, database, or server logs.
+- **No Password Manager Interference:** Inputs are styled with CSS-based masking (`text-security: disc`) without triggering browser password generator popups.
 - **Permalinks:** Streams are generated using TorBox's official `redirect=true` permalinks, streaming content directly from TorBox's CDN to your player.
 - See [SECURITY.md](SECURITY.md) for vulnerability reporting and security specifications.
 

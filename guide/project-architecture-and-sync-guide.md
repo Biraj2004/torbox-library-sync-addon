@@ -38,3 +38,4 @@ A common mistake is placing an icon inside a large dark rounded container with e
 - **Local Memory Cache:** `getMyList` uses an adaptive 15-second cache to prevent spamming TorBox while ensuring newly added torrents appear almost immediately upon refresh.
 - **TorBox Cloud Tags:** Once matched to an IMDb ID, the addon calls TorBox's `/torrents/edittorrent` API to append the IMDb tag (e.g. `tt11280740`) to the torrent in the background.
 - **0ms Fast Path:** Subsequent queries across any device (Stremio Android, Desktop, Nuvio Web) match the torrent tag directly without requiring any metadata lookup.
+

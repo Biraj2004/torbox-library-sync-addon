@@ -21,6 +21,7 @@ import {
   AddonConfig,
   ADDON_NAME,
   decodeConfig,
+  encryptConfig,
   getDefaultConfig,
 } from "./config";
 import { configurePage } from "./configure";
@@ -271,6 +272,21 @@ app.post("/api/test-key", async (req, res) => {
   } else {
     res.status(400).json({ valid: false, error: "Unknown service provider" });
   }
+});
+
+// Endpoint to dynamically encrypt user configuration into an opaque AES-256-GCM token
+app.post("/api/encrypt-config", (req, res) => {
+  const { torboxApiKey, mdblistApiKey, tvdbApiKey } = req.body || {};
+  if (!torboxApiKey || typeof torboxApiKey !== "string" || !torboxApiKey.trim()) {
+    res.status(400).json({ error: "Missing TorBox API key" });
+    return;
+  }
+  const token = encryptConfig({
+    torboxApiKey: torboxApiKey.trim(),
+    mdblistApiKey: typeof mdblistApiKey === "string" ? mdblistApiKey.trim() || undefined : undefined,
+    tvdbApiKey: typeof tvdbApiKey === "string" ? tvdbApiKey.trim() || undefined : undefined,
+  });
+  res.json({ token });
 });
 
 // Root manifest endpoint
